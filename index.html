@@ -1116,7 +1116,7 @@ function startGIS(){
 }
 /* Boot whenever a session appears, whichever path produced it - the GIS
    callback, One Tap, or a restored session. Avoids racing the callback. */
-SB.auth.onAuthStateChange(function(_e,session){if(session)boot();});
+SB.auth.onAuthStateChange(function(_e,session){if(session)setTimeout(boot,0);});
 SB.auth.getSession().then(function(r){
   if(r.data&&r.data.session){boot();}else{showGate('');startGIS();}
 });

@@ -476,7 +476,7 @@ function startGIS(){
     if(!resp||!resp.credential)return;
     SB.auth.signInWithIdToken({provider:'google',token:resp.credential}).then(function(r){
       if(r.error){authFail('Couldn\u2019t sign in \u2014 '+r.error.message);return;}
-      if(!loadQueue._on){loadQueue._on=true;IDT='session';loadQueue(true);}
+      if(!loadQueue._on){loadQueue._on=true;IDT='session';setTimeout(function(){loadQueue(true);},0);}
     });
   }});
   google.accounts.id.renderButton(document.getElementById('gbtn'),{theme:'outline',size:'large',text:'signin_with',shape:'rectangular'});
@@ -484,7 +484,7 @@ function startGIS(){
 }
 CLIENT_ID='131895285577-rsqau2l8o6na5890nmdlqp52uui94h0f.apps.googleusercontent.com';
 SB.auth.onAuthStateChange(function(_e,session){
-  if(session&&!loadQueue._on){loadQueue._on=true;IDT='session';loadQueue(true);}
+  if(session&&!loadQueue._on){loadQueue._on=true;IDT='session';setTimeout(function(){loadQueue(true);},0);}
 });
 /* Resume an existing Supabase session, otherwise show Google's button as before. */
 SB.auth.getSession().then(function(r){

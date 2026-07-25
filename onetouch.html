@@ -106,7 +106,7 @@
     <img class="logo" src="https://media-production.lp-cdn.com/cdn-cgi/image/format=auto,quality=85,fit=scale-down,width=320/https://media-production.lp-cdn.com/media/zbdbv6qzgekrd4zsps7z" alt="Nook Realty" onerror="this.style.display='none';document.getElementById('logotext').style.display='block'">
     <div class="logotext" id="logotext">Nook Realty</div>
     <h1>One-Touch Correspondence</h1>
-    <p><b>Emails:</b> tap the circle &mdash; they send within the hour from Jen&rsquo;s Gmail. <b>Texts:</b> tap Send Text &mdash; it copies the message and opens the contact in Follow Up Boss; paste and hit send there so it goes from your FUB number. Nothing sends without a tap. <a href="./">&larr; board</a></p>
+    <p><b>Emails:</b> tap Send Email &mdash; it opens your mail app with everything filled in; hit send there. <b>Texts:</b> tap Send Text &mdash; it copies the message and opens the contact in Follow Up Boss; paste and hit send there so it goes from your FUB number. Nothing leaves this page on its own. <a href="./">&larr; board</a></p>
   </header>
   <div id="gate">
     <p>This page is private &mdash; sign in with your Google account to open the queue.<br>(Only accounts on Jen&rsquo;s approved list get in.)</p>
@@ -240,10 +240,20 @@ function personKey(r){
   return p;
 }
 
+function mailAddr(v){
+  /* "Dana Reyes <dana@x.com>" -> "dana@x.com"; then make it URL-safe.
+     An unescaped # would swallow the subject and body as a fragment. */
+  var a=String(v||'').trim();
+  var m=a.match(/<([^>]+)>/);
+  if(m)a=m[1];
+  return a.replace(/\s+/g,'').replace(/[#?&<>"'\\]/g,function(c){
+    return '%'+c.charCodeAt(0).toString(16).toUpperCase();
+  });
+}
 function mailHref(r){
   /* Opens whatever mail app the phone has set as default, pre-loaded.
      Body is the message only — the phone appends its own signature. */
-  return 'mailto:'+String(r.to||'').trim().replace(/\s+/g,'')
+  return 'mailto:'+mailAddr(r.to)
     +'?subject='+encodeURIComponent(String(r.subject||''))
     +'&body='+encodeURIComponent(String(r.message||''));
 }
@@ -262,8 +272,7 @@ function card(r){
   var dot=ADMIN&&r.assignedto?'<span class="dot'+(String(r.assignedto).toLowerCase().indexOf('jen')===0||String(r.assignedto).toLowerCase().indexOf('jennifer')===0?'':' o')+'" title="'+escA(r.assignedto)+'">'+esc(initials(r.assignedto))+'</span>':'';
   var left,right='',statusNote='';
   if(isTodo(st)){
-    left=st==='approved'?'<span class="stic ok">&#10003;</span>'
-                        :'<span class="stic tx">'+(em?'&#9993;':'&#128172;')+'</span>';
+    left='<span class="stic tx">'+(em?'&#9993;':'&#128172;')+'</span>';
     right=em?emailBtn
             :'<a class="cta" data-sms="'+escA(r.id)+'"'+sendAttr+' href="'+sendHref+'">Send Text</a>';
   } else if(st==='completed'){
@@ -443,8 +452,12 @@ document.getElementById('list').addEventListener('click',function(e){
   }
   var m=e.target.closest('[data-mail]');
   if(m){
-    /* let the mailto: navigate, then mark it sent — same deal as Send Text */
-    act(m.getAttribute('data-mail'),'sent','Opening your mail app — hit send there. Marked sent here; tap undo if you back out.');
+    /* Defer: act() redraws the list, which detaches this <a> mid-dispatch.
+       Let the browser follow the mailto: first, then mark it sent. */
+    var mid=m.getAttribute('data-mail');
+    setTimeout(function(){
+      act(mid,'sent','Opening your mail app — hit send there. Marked sent here; tap undo if you back out.');
+    },0);
     return;
   }
   var s=e.target.closest('[data-sms]');

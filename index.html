@@ -257,6 +257,7 @@
   .gh-cnt{font-size:12.5px;color:var(--muted);white-space:nowrap}
   .gh-bar{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:11px}
   .gh-bar i{display:block;height:100%;background:var(--nook)}
+  .gh-desc{font-size:13px;color:var(--muted);line-height:1.65;margin:12px 0 0;max-width:70ch}
   .subtabs{text-align:left;display:flex;gap:20px;margin:13px 0 2px}
   .subtabs button{background:none;border:none;border-radius:0;margin:0;padding:0 0 6px;
     font-family:'Poppins',sans-serif;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;
@@ -467,6 +468,12 @@ var SUPA_URL='https://wopiuwndpuxzywtchbtt.supabase.co';
 var SUPA_KEY='sb_publishable_RpO9TVBWHAB6lAwi264W2A_T-ofVxuA';
 var GOOGLE_CLIENT_ID='131895285577-rsqau2l8o6na5890nmdlqp52uui94h0f.apps.googleusercontent.com';
 var SB=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+var CAT_DESC={
+  listings:'Shift the focus to winning seller listings, luxury-led, across Dripping Springs, Wimberley, Westlake and Lake Travis. With 63.5% of Dripping Springs listings cutting price and $2M+ West Austin sitting on roughly 16.7 months of inventory, sellers go to whoever markets best.',
+  presence:'Make the luxury track record findable. The $2.9M–$5.4M career sales are effectively invisible online today — this covers the sold gallery, a Luxury Listings page, the CLHMS directory, a consolidated Zillow profile, and the weekly market video that doubles as a listing presentation.',
+  convert:'Speed to lead and clean CRM stages drive Zillow Preferred scoring, and Preferred scoring drives volume. Running alongside it: the review campaign across about 90 past closings, since reviews are the strongest online converter for listing appointments.',
+  ops:'The plumbing everything else runs on — the home-valuation funnel, seller pages and gated guides, Meta seller campaigns, and the automations that keep it all moving inside 3–6 hours a week.'
+};
 var CATS={listings:'Goal 1 · Win Listings',presence:'Goal 2 · Online Presence',convert:'Goal 3 · Convert & Score',ops:'Goal 4 · Tools & Systems'};
 var SHORT={listings:'Listings',presence:'Presence',convert:'Convert',ops:'Systems'};
 var PRIO_LABEL={1:'Do first',2:'This week',3:'When you can'};
@@ -762,7 +769,8 @@ function draw(){
   document.getElementById('goalhead').innerHTML=
     '<div class="gh-row"><span class="gh-name">'+esc(CATS[CAT])+'</span>'
     +'<span class="gh-cnt">'+doneCount+' of '+catTasks.length+' done</span></div>'
-    +'<div class="gh-bar"><i style="width:'+pct+'%"></i></div>';
+    +'<div class="gh-bar"><i style="width:'+pct+'%"></i></div>'
+    +(CAT_DESC[CAT]?'<p class="gh-desc">'+esc(CAT_DESC[CAT])+'</p>':'');
   var jenReady=catTasks.filter(function(t){return t.type==='jen'&&isReady(t);});
   document.getElementById('n-todo').textContent=jenReady.length||'';
   var aiOpen=catTasks.filter(function(t){return t.type==='ai'&&!isDone(t);}).length;

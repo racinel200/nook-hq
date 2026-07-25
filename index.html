@@ -126,6 +126,26 @@
   .chip{display:inline-block;background:#f6f0e6;color:#7a6f5d;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;margin-right:6px}
   .chip.jen{background:#f7e6e9;color:var(--nook-d)}
   .chip.ai{background:var(--blue-bg);color:var(--blue)}
+  /* owner chip — one per card, colour-coded per teammate */
+  .own{display:inline-flex;align-items:center;gap:5px;background:#f1ece3;color:#6b6152;border-radius:12px;padding:1px 9px 1px 2px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;margin-right:6px;vertical-align:middle}
+  .own i{width:17px;height:17px;border-radius:50%;background:#b9b0a1;color:#fff;font-style:normal;font-size:10px;display:flex;align-items:center;justify-content:center;letter-spacing:0}
+  .own.o-jen{background:#f7e6e9;color:var(--nook-d)} .own.o-jen i{background:var(--nook)}
+  .own.o-ai{background:var(--blue-bg);color:var(--blue)} .own.o-ai i{background:var(--blue)}
+  .own.o-vic{background:#e9f2ea;color:#2e5c38} .own.o-vic i{background:#4e8259}
+  .own.o-lat{background:#f2ecf9;color:#5d4287} .own.o-lat i{background:#7b5aa6}
+  .own.o-reb{background:#fbeee1;color:#8c5f26} .own.o-reb i{background:#b98139}
+  .assignbtn{display:inline-block;font-family:inherit;color:#6b6152;background:#f4efe6;border:1px solid #e2dacb;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;margin-left:2px}
+  .assignbtn:hover{background:#6b6152;color:#fff;border-color:#6b6152}
+  .anote{font-size:12.5px;line-height:1.5;color:#5c554f;background:#fbf7f0;border:1px solid #ece3d4;border-left:3px solid var(--gold);border-radius:8px;padding:7px 11px;margin-top:6px}
+  .anote b{color:#8a7433;font-weight:normal;font-size:11px;letter-spacing:.6px;text-transform:uppercase;display:block;margin-bottom:2px}
+  .viewtoggle{text-align:center;margin:6px 0 0;font-size:12px;color:var(--muted)}
+  .viewtoggle button{font-family:inherit;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:5px 10px;border-radius:14px;letter-spacing:.5px}
+  .viewtoggle button.active{background:var(--ink);color:#fff}
+  .modal select{width:100%;font-family:inherit;font-size:15px;padding:11px 12px;border:1px solid #e0d8ca;border-radius:10px;background:#fdfcf9;color:var(--ink);-webkit-appearance:none;appearance:none}
+  .modal textarea#assignNote{width:100%;font-family:inherit;font-size:14.5px;line-height:1.55;padding:11px 12px;border:1px solid #e0d8ca;border-radius:10px;background:#fdfcf9;min-height:88px;resize:vertical}
+  .notifyrow{display:flex;align-items:flex-start;gap:9px;margin-top:14px;font-size:13.5px;color:#4c4642;line-height:1.45;cursor:pointer}
+  .notifyrow input{width:18px;height:18px;margin-top:1px;flex:0 0 18px;accent-color:var(--nook)}
+  .notifyrow small{display:block;color:var(--muted);font-size:12px}
   .askclaude{display:inline-block;color:#b0602f;background:#faf3ec;border:1px solid #ecd9c8;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;margin-left:2px}
   .askclaude:hover{background:#b0602f;color:#fff;border-color:#b0602f}
   .autobtn{display:inline-block;font-family:inherit;color:#2e5c38;background:#e9f2ea;border:1px solid #b7d3bc;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer;margin-left:2px}
@@ -253,7 +273,10 @@
     .task.onclaude .box:after{top:-1px;left:5px;font-size:16px}
     .task .meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:9px}
     .chip{margin-right:0;padding:2px 10px;font-size:11px}
-    .explainbtn,.askclaude,.autobtn,.notebtn{margin-left:0;padding:9px 15px;font-size:12.5px;border-radius:20px}
+    .own{margin-right:0;padding:3px 11px 3px 3px;font-size:11px}
+    .own i{width:19px;height:19px;font-size:11px}
+    .explainbtn,.askclaude,.autobtn,.notebtn,.assignbtn{margin-left:0;padding:9px 15px;font-size:12.5px;border-radius:20px}
+    .viewtoggle button{padding:8px 14px;font-size:13px}
     .autobtn{font-size:12px;letter-spacing:.3px;padding:9px 13px;text-align:center}
     .task .blockrow{gap:8px;margin-top:9px}
     .blockedby{padding:9px 15px;font-size:12.5px;border-radius:20px}
@@ -390,6 +413,7 @@
         <button data-tab="actions">Claude<span class="count" id="n-claude"></span></button>
         <button data-tab="done">Done<span class="count" id="n-done"></span></button>
       </div>
+      <div class="viewtoggle" id="viewtoggle" style="display:none"></div>
       <div id="tabbody"></div>
       <div class="sumline" id="sumline"></div>
     </div>
@@ -446,10 +470,7 @@
     <label>Category</label>
     <div class="pick" id="catPick"></div>
     <label>Who does it?</label>
-    <div class="pick" id="whoPick">
-      <button data-w="jen" class="active">Me (Jen)</button>
-      <button data-w="ai">The AI worker</button>
-    </div>
+    <div class="pick" id="whoPick"></div>
     <div class="actions">
       <button class="cancel" id="modalCancel">Cancel</button>
       <button class="send" id="modalAdd">Add it</button>
@@ -492,6 +513,26 @@
   </div>
 </div>
 
+<div class="overlay" id="assignOverlay">
+  <div class="modal">
+    <h2>Assign this task</h2>
+    <p style="font-size:12.5px;color:var(--muted);margin-top:4px" id="assignSub"></p>
+    <label>Assign to</label>
+    <select id="assignWho"></select>
+    <label>Note for them <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+    <textarea id="assignNote" maxlength="1200" placeholder="Anything they need to know to run with it — context, a deadline, where the file lives."></textarea>
+    <label class="notifyrow" for="assignNotify">
+      <input type="checkbox" id="assignNotify">
+      <span>Email them a heads-up
+        <small>Opens a ready-to-send draft in your mail app. Nothing sends until you tap send.</small></span>
+    </label>
+    <div class="actions">
+      <button class="cancel" id="assignCancel">Cancel</button>
+      <button class="send" id="assignSave">Assign</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -522,6 +563,70 @@ var PRIO_LABEL={1:'Do first',2:'This week',3:'When you can'};
 var CONFIG={apiUrl:'',projectId:'',contextTemplate:''};
 var DATA={tasks:[],activity:[],notes:[],leads:[]};
 var TAB='todo', CAT='listings', ME_EMAIL='';
+
+/* ---------- people & ownership ----------
+   The roster is the signatures table (admin-editable in Settings), so adding a
+   teammate there adds them to every assign picker. Claude rides along as a
+   pseudo-person: assigning to Claude puts the task in the AI lane. A database
+   trigger keeps type and assignee in step no matter who does the writing —
+   browser, worker skill, or a plain REST call. */
+var CLAUDE='claude';
+var OWNER='jennifer@nookrealtygroup.com';   /* Jen — always sees the whole board */
+var DEFAULT_HANDLE='victoria';  /* who the assign popup preselects */
+var PEOPLE=[];
+/* This file is a public repo, so the roster lives in the sign-in-gated
+   signatures table, never here. If that fetch ever fails we fall back to Jen
+   alone rather than shipping the team's addresses in page source. */
+var SEED=[{email:'jennifer@nookrealtygroup.com',name:'Jennifer Ferrara'}];
+var OWNCLS={jennifer:'o-jen',victoria:'o-vic',latreacia:'o-lat',rebecka:'o-reb'};
+var VIEW_MINE=false;   /* the Mine/Everyone toggle — admins and Jen only */
+var CLAUDE_P={email:CLAUDE,name:'Claude (AI worker)',short:'Claude',cls:'o-ai',ini:'AI'};
+
+function mkPerson(email,name){
+  var k=String(email||'').toLowerCase().trim(), handle=k.split('@')[0];
+  var first=String(name||handle).trim().split(/\s+/)[0];
+  return {email:k,name:name||handle,short:(k===OWNER?'Jen':first),
+          cls:OWNCLS[handle]||'',ini:(first.charAt(0)||'?').toUpperCase()};
+}
+PEOPLE=SEED.map(function(p){return mkPerson(p.email,p.name);});  /* until the roster loads */
+function person(email){
+  var k=String(email||'').toLowerCase().trim()||OWNER;
+  if(k===CLAUDE) return CLAUDE_P;
+  for(var i=0;i<PEOPLE.length;i++) if(PEOPLE[i].email===k) return PEOPLE[i];
+  return mkPerson(k,'');
+}
+function loadPeople(){
+  return SB.from('signatures').select('email,display_name').then(function(r){
+    var rows=(r&&!r.error&&r.data&&r.data.length)
+      ? r.data : SEED.map(function(p){return {email:p.email,display_name:p.name};});
+    PEOPLE=rows.map(function(x){return mkPerson(x.email,x.display_name);})
+      .sort(function(a,b){return a.email===OWNER?-1:(b.email===OWNER?1:a.short.localeCompare(b.short));});
+  })['catch'](function(){PEOPLE=SEED.map(function(p){return mkPerson(p.email,p.name);});});
+}
+function defaultAssignee(){
+  for(var i=0;i<PEOPLE.length;i++)
+    if(PEOPLE[i].email.split('@')[0]===DEFAULT_HANDLE)return PEOPLE[i].email;
+  return OWNER;
+}
+/* a task with no assignee reads as Jen's (or Claude's, in the AI lane) */
+function ownerOf(t){return String(t.assignee||'').toLowerCase().trim()||(t.type==='ai'?CLAUDE:OWNER);}
+function isMine(t){return ownerOf(t)===String(ME_EMAIL||'').toLowerCase().trim();}
+/* Jen sees everything whichever Google account she signs in with. Admins get the
+   Mine/Everyone toggle. Everyone else sees only what's assigned to them. */
+function seesAll(){return IS_ADMIN||String(ME_EMAIL||'').toLowerCase().trim()===OWNER;}
+function visible(t){return seesAll()?(VIEW_MINE?isMine(t):true):isMine(t);}
+function ownChip(t){
+  var p=person(ownerOf(t));
+  return '<span class="own '+p.cls+'" title="'+escA(p.name)+'"><i>'+esc(p.ini)+'</i>'+esc(p.short)+'</span>';
+}
+function drawViewToggle(){
+  var el=document.getElementById('viewtoggle');
+  if(!el)return;
+  if(!seesAll()){el.style.display='none';return;}
+  el.style.display='';
+  el.innerHTML='<button data-view="all"'+(VIEW_MINE?'':' class="active"')+'>Everyone</button>'
+    +'<button data-view="mine"'+(VIEW_MINE?' class="active"':'')+'>Just mine</button>';
+}
 
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function escA(s){return esc(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -626,8 +731,21 @@ var call=function(params){
     });
     var newId=pfx+(max+1);
     return SB.from('tasks').insert({id:newId,title:params.title,priority:params.priority,
-      category:params.category,type:params.type,status:'todo',updated:now}).then(function(res){
+      category:params.category,type:params.type,assignee:params.assignee||null,
+      status:'todo',updated:now}).then(function(res){
       return res.error?{ok:false,error:res.error.message}:{ok:true,id:newId};
+    });
+  }
+  /* assignment: the database trigger keeps `type` in step with the assignee,
+     so the AI lane and the human lane stay correct whoever writes the row */
+  if(a==='assign'){
+    return SB.from('tasks').update({assignee:params.assignee,
+        assign_note:params.note||null,updated:now}).eq('id',params.id).then(function(res){
+      if(res.error)return {ok:false,error:res.error.message};
+      if(!params.summary)return {ok:true};
+      return SB.from('activity').insert({date:now,task_id:params.id,summary:params.summary})
+        .then(function(){DATA.activity.push({date:now,taskid:params.id,summary:params.summary,link:''});
+                         return {ok:true};});
     });
   }
   if(a==='note'){
@@ -756,7 +874,7 @@ function rich(s){
 function taskHtml(t,mode){
   var onClaude=(mode==='waiting')&&isOnClaude(t);
   var cls='task'+(isDone(t)?' done':'')+(t.priority==='1'?' p1':'')+(mode==='waiting'?(onClaude?' waiting onclaude':' waiting'):'');
-  var chips='';
+  var chips=ownChip(t);
   var ask='';
   if(!isDone(t)&&t.type==='jen'){
     ask=autoFor(t)
@@ -784,9 +902,15 @@ function taskHtml(t,mode){
   if(isDone(t)) noteBtn=' <button class="notebtn" data-note="'+escA(t.id)+'">&#9998; '+(existing?'Edit note':'Add a note')+'</button>';
   else if(t.type==='jen') noteBtn=' <button class="notebtn" data-note="'+escA(t.id)+'">'+(existing?'&#9998; Edit note':'&#43; Add a note')+'</button>';
   var noteShow=notesFor(t.id).map(noteBlock).join('');
+  /* assign: hand the task to a teammate (or to Claude, which moves it to the AI lane) */
+  var assignBtn=isDone(t)?''
+    :' <button class="assignbtn" data-assign="'+escA(t.id)+'">&#8644; Assign to</button>';
+  /* the assignment note is for the person holding the task, not the AI worker */
+  var anote=String(t.assign_note||'').trim()
+    ? '<div class="anote"><b>Note for '+esc(person(ownerOf(t)).short)+'</b>'+rich(t.assign_note)+'</div>' : '';
   return '<div class="'+cls+'" data-tid="'+escA(t.id)+'">'+box
     +'<div class="body"><div class="txt" data-open="'+escA(t.id)+'">'+esc(t.title)+'</div>'
-    +'<div class="meta">'+chips+expl+ask+noteBtn+'</div>'+wait+res+noteShow
+    +'<div class="meta">'+chips+expl+ask+noteBtn+assignBtn+'</div>'+wait+res+anote+noteShow
     +(t.detail?'<div class="detail">'+rich(t.detail)+'</div>':'')
     +'</div>'+undo+'</div>';
 }
@@ -794,8 +918,8 @@ function taskHtml(t,mode){
 function drawGoalTabs(){
   var el=document.getElementById('goaltabs');
   el.innerHTML=Object.keys(CATS).map(function(k){
-    var ready=DATA.tasks.filter(function(t){return t.category===k&&t.type==='jen'&&isReady(t);}).length;
-    var onClaude=DATA.tasks.filter(function(t){return t.category===k&&isOnClaude(t);}).length;
+    var ready=DATA.tasks.filter(function(t){return t.category===k&&t.type==='jen'&&isReady(t)&&visible(t);}).length;
+    var onClaude=DATA.tasks.filter(function(t){return t.category===k&&isOnClaude(t)&&visible(t);}).length;
     return '<button data-cat="'+escA(k)+'"'+(CAT===k?' class="active"':'')+' title="'+escA(CATS[k])+'">'+esc(SHORT[k])
       +(ready?'<span class="count" title="Ready for you">'+ready+'</span>':'')
       +(onClaude?'<span class="count wait" title="Your tasks waiting on Claude">'+onClaude+'</span>':'')
@@ -910,7 +1034,11 @@ document.getElementById('adminToggle').addEventListener('click',function(e){
 
 function draw(){
   drawGoalTabs();
-  var catTasks=DATA.tasks.filter(inCat);
+  drawViewToggle();
+  /* allCat = everything in this goal (the AI queue stays shared team context);
+     catTasks = the slice this person is allowed to see in To do / Done. */
+  var allCat=DATA.tasks.filter(inCat);
+  var catTasks=allCat.filter(visible);
   var doneCount=catTasks.filter(isDone).length;
   var pct=catTasks.length?Math.round(doneCount/catTasks.length*100):0;
   document.getElementById('goalhead').innerHTML=
@@ -923,7 +1051,7 @@ function draw(){
   wireGoalTip();
   var jenReady=catTasks.filter(function(t){return t.type==='jen'&&isReady(t);});
   document.getElementById('n-todo').textContent=jenReady.length||'';
-  var aiOpen=catTasks.filter(function(t){return t.type==='ai'&&!isDone(t);}).length;
+  var aiOpen=allCat.filter(function(t){return t.type==='ai'&&!isDone(t);}).length;
   document.getElementById('n-claude').textContent=aiOpen||'';
   document.getElementById('n-done').textContent=doneCount||'';
   var body=document.getElementById('tabbody');
@@ -954,8 +1082,8 @@ function draw(){
     document.getElementById('sumline').textContent=done.length+' finished in '+(CATS[CAT]||'');
   }
   else {
-    var queued=catTasks.filter(function(t){return t.type==='ai'&&t.status!=='done'&&isReady(t);});
-    var aiwait=catTasks.filter(function(t){return t.type==='ai'&&!isDone(t)&&!depsMet(t);});
+    var queued=allCat.filter(function(t){return t.type==='ai'&&t.status!=='done'&&isReady(t);});
+    var aiwait=allCat.filter(function(t){return t.type==='ai'&&!isDone(t)&&!depsMet(t);});
     html='<div class="prio-head prio-2">In the AI queue</div>';
     html+=queued.length?queued.map(function(t){return taskHtml(t,'waiting');}).join(''):'<p class="empty">Queue is clear for this goal.</p>';
     if(aiwait.length) html+='<div class="prio-head prio-w">Waiting on you first</div>'+aiwait.map(function(t){return taskHtml(t,'waiting');}).join('');
@@ -1135,7 +1263,8 @@ function explainText(t){
 }
 function openExplain(id){
   var t=byId(id);if(!t)return;
-  document.getElementById('exId').textContent=t.id+' · '+(t.type==='ai'?'AI task':'Jen task')+' · '+(CATS[t.category]||t.category);
+  var op=person(ownerOf(t));
+  document.getElementById('exId').textContent=t.id+' · '+(op.email===CLAUDE?'AI task':op.short+'’s task')+' · '+(CATS[t.category]||t.category);
   document.getElementById('exTitle').textContent=t.title;
   var body=document.getElementById('exBody');
   var s=explainText(t);
@@ -1178,6 +1307,8 @@ document.getElementById('tabbody').addEventListener('click',function(e){
   if(u){markUndo(u.getAttribute('data-undo'));return;}
   var nt=e.target.closest('[data-note]');
   if(nt){openNote(nt.getAttribute('data-note'));return;}
+  var as=e.target.closest('[data-assign]');
+  if(as){openAssign(as.getAttribute('data-assign'));return;}
   var g=e.target.closest('[data-goto]');
   if(g){gotoTask(g.getAttribute('data-goto'));return;}
   var o=e.target.closest('[data-open]');
@@ -1277,8 +1408,88 @@ document.getElementById('noteSave').addEventListener('click',function(){
   }).catch(function(){toast('Couldn’t save that note — try again.');}).then(function(){btn.disabled=false;});
 });
 
+/* ---------- assign modal ----------
+   One button per open task. The popup sets the owner, keeps an optional note
+   meant for that person (the AI worker ignores it unless Claude is the one
+   holding the task), and can open a prefilled email draft. */
+var assignTaskId=null;
+function drawAssignPicker(sel){
+  var el=document.getElementById('assignWho');
+  el.innerHTML=PEOPLE.concat([CLAUDE_P]).map(function(p){
+    return '<option value="'+escA(p.email)+'"'+(p.email===sel?' selected':'')+'>'+esc(p.name)+'</option>';
+  }).join('');
+  syncNotifyRow();
+}
+/* emailing Claude makes no sense — hide the notify line when it's selected */
+function syncNotifyRow(){
+  var who=document.getElementById('assignWho').value;
+  var row=document.querySelector('.notifyrow');
+  if(!row)return;
+  var claude=(who===CLAUDE);
+  row.style.display=claude?'none':'';
+  if(claude)document.getElementById('assignNotify').checked=false;
+  document.getElementById('assignSave').textContent=claude?'Send to Claude':'Assign';
+}
+function openAssign(id){
+  var t=byId(id);if(!t)return;
+  assignTaskId=id;
+  var cur=ownerOf(t);
+  /* anything still sitting with Jen preselects Victoria — the usual hand-off */
+  drawAssignPicker(cur===OWNER?defaultAssignee():cur);
+  document.getElementById('assignSub').textContent=t.id+' · '+t.title;
+  document.getElementById('assignNote').value=String(t.assign_note||'');
+  document.getElementById('assignNotify').checked=false;
+  document.getElementById('assignOverlay').classList.add('show');
+}
+function closeAssign(){document.getElementById('assignOverlay').classList.remove('show');assignTaskId=null;}
+document.getElementById('assignCancel').addEventListener('click',closeAssign);
+document.getElementById('assignWho').addEventListener('change',syncNotifyRow);
+document.getElementById('assignOverlay').addEventListener('click',function(e){if(e.target===this)closeAssign();});
+/* The page never sends mail. It opens a draft in whatever mail app the person
+   is signed into, so it goes from them and they read it before it leaves. */
+function assignMail(t,p,note){
+  var lines=['Hi '+p.short+',','','Passing this one to you on the board:','',
+             t.id+' — '+t.title];
+  if(String(t.detail||'').trim())lines.push('',String(t.detail).trim());
+  if(note)lines.push('','My note: '+note);
+  lines.push('','It’s on Nook HQ here: https://racinel200.github.io/nook-hq/','','Thank you!');
+  var body=lines.join('\n');
+  if(body.length>1400)body=body.slice(0,1400)+'\n…';
+  return 'mailto:'+encodeURIComponent(p.email)
+    +'?subject='+encodeURIComponent('Nook HQ · '+t.id+' — '+t.title)
+    +'&body='+encodeURIComponent(body);
+}
+document.getElementById('assignSave').addEventListener('click',function(){
+  if(!assignTaskId)return;
+  var t=byId(assignTaskId);if(!t)return;
+  if(!CONFIG.apiUrl){needApi();return;}
+  var who=document.getElementById('assignWho').value;
+  var note=document.getElementById('assignNote').value.trim();
+  var notify=document.getElementById('assignNotify').checked;
+  var p=person(who),moved=(who!==ownerOf(t)),btn=this;
+  btn.disabled=true;
+  call({action:'assign',id:t.id,assignee:who,note:note,
+        summary:moved?(t.id+' handed to '+p.short+' by '+person(ME_EMAIL).short):''
+  }).then(function(r){
+    if(!r.ok)throw new Error(r.error);
+    t.assignee=who;t.assign_note=note;t.type=(who===CLAUDE?'ai':'jen');
+    closeAssign();draw();
+    toast(t.id+' → '+p.short+(who===CLAUDE?' — the worker picks it up within the hour.':''));
+    if(notify&&who!==CLAUDE)window.location.href=assignMail(t,p,note);
+  })['catch'](function(){toast('Couldn’t assign that — try again.');})
+   .then(function(){btn.disabled=false;});
+});
+
+/* Mine / Everyone — Jen and admins only; everyone else is filtered to their own */
+document.getElementById('viewtoggle').addEventListener('click',function(e){
+  var b=e.target.closest('[data-view]');if(!b)return;
+  VIEW_MINE=(b.getAttribute('data-view')==='mine');
+  try{localStorage.setItem('nook-view-mine',VIEW_MINE?'1':'0');}catch(e2){}
+  draw();
+});
+
 /* add-task modal */
-var newPrio='2',newCat='listings',newWho='jen';
+var newPrio='2',newCat='listings',newWho=OWNER;
 (function(){
   var cp=document.getElementById('catPick');
   cp.innerHTML=Object.keys(CATS).map(function(k){
@@ -1294,10 +1505,20 @@ function pickWire(id,attr,set){
 pickWire('prioPick','data-p',function(v){newPrio=v;});
 pickWire('catPick','data-c',function(v){newCat=v;});
 pickWire('whoPick','data-w',function(v){newWho=v;});
+/* one button per teammate plus Claude — new tasks default to Jen, exactly as
+   they did when this was a two-way Jen/AI switch */
+function drawWhoPick(){
+  var el=document.getElementById('whoPick');
+  el.innerHTML=PEOPLE.concat([CLAUDE_P]).map(function(p){
+    var label=(p.email===OWNER)?'Me (Jen)':(p.email===CLAUDE?'The AI worker':p.short);
+    return '<button data-w="'+escA(p.email)+'"'+(p.email===newWho?' class="active"':'')+'>'+esc(label)+'</button>';
+  }).join('');
+}
 document.getElementById('fab').addEventListener('click',function(){
   /* default the category picker to the goal tab Jen is looking at */
   newCat=CAT;
   document.querySelectorAll('#catPick button').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-c')===newCat);});
+  newWho=OWNER;drawWhoPick();
   document.getElementById('overlay').classList.add('show');document.getElementById('newtask').focus();
 });
 document.getElementById('modalCancel').addEventListener('click',function(){document.getElementById('overlay').classList.remove('show');});
@@ -1307,12 +1528,13 @@ document.getElementById('modalAdd').addEventListener('click',function(){
   if(!title){toast('Give it a name first.');return;}
   if(!CONFIG.apiUrl){needApi();return;}
   var btn=this;btn.disabled=true;
-  call({action:'add',title:title,priority:newPrio,category:newCat,type:newWho}).then(function(r){
+  var ty=(newWho===CLAUDE)?'ai':'jen',p=person(newWho);
+  call({action:'add',title:title,priority:newPrio,category:newCat,type:ty,assignee:newWho}).then(function(r){
     if(!r.ok)throw new Error(r.error);
-    DATA.tasks.push({id:r.id,type:newWho,category:newCat,priority:newPrio,status:'todo',title:title,detail:'',deps:'',unlocks:'',result:'',updated:new Date().toISOString()});
+    DATA.tasks.push({id:r.id,type:ty,assignee:newWho,assign_note:'',category:newCat,priority:newPrio,status:'todo',title:title,detail:'',deps:'',unlocks:'',result:'',updated:new Date().toISOString()});
     inp.value='';document.getElementById('overlay').classList.remove('show');
-    draw();toast('Added '+r.id+(newWho==='ai'?' — the worker will pick it up.':''));
-  }).catch(function(){toast('Couldn’t add — try again.');}).then(function(){btn.disabled=false;});
+    draw();toast('Added '+r.id+(ty==='ai'?' — the worker will pick it up.':' for '+p.short));
+  })['catch'](function(){toast('Couldn’t add — try again.');}).then(function(){btn.disabled=false;});
 });
 
 /* ---------- load ---------- */
@@ -1342,7 +1564,7 @@ function loadData(first){
       /* open on the goal with the most tasks ready for Jen */
       var best=CAT,bestN=-1;
       Object.keys(CATS).forEach(function(k){
-        var n=DATA.tasks.filter(function(t){return t.category===k&&t.type==='jen'&&isReady(t);}).length;
+        var n=DATA.tasks.filter(function(t){return t.category===k&&t.type==='jen'&&isReady(t)&&visible(t);}).length;
         if(n>bestN){bestN=n;best=k;}
       });
       CAT=best;
@@ -1384,15 +1606,23 @@ function renderWho(user,extra){
 var BOOTED=false;
 function boot(){
   if(BOOTED)return;BOOTED=true;
-  SB.auth.getUser().then(function(u){if(u.data&&u.data.user)renderWho(u.data.user,'');});
+  /* ME_EMAIL decides which tasks a teammate can see, so redraw once it's known */
+  SB.auth.getUser().then(function(u){
+    if(u.data&&u.data.user){renderWho(u.data.user,'');if(DATA.tasks.length)draw();}
+  });
+  try{VIEW_MINE=localStorage.getItem('nook-view-mine')==='1';}catch(e0){}
+  /* who can see what depends on admin status, so redraw once the answer lands */
   SB.rpc('is_nook_admin').then(function(r){
     IS_ADMIN=!!(r&&r.data);
+    if(DATA.tasks.length)draw();
     if(!IS_ADMIN)return;
     document.getElementById('adminToggle').style.display='';
     try{ADMIN_SHOW=localStorage.getItem('nook-admin-show')==='1';}catch(e){}
     drawAdmin();
     if(ADMIN_SHOW)loadAdmin();
   });
+  /* the assign pickers read the roster from the signatures table */
+  loadPeople().then(function(){drawWhoPick();if(DATA.tasks.length)draw();});
   document.getElementById('gate').style.display='none';
   document.getElementById('status').style.display='block';
   loadData(true).catch(function(){showSetup();});

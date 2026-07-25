@@ -175,6 +175,11 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const escA = s => esc(s).replace(/"/g,'&quot;');
 
+/* Render [text](url) markdown links. Escapes first, then only promotes
+   http(s) URLs to anchors - so nothing user-supplied can inject markup. */
+const rich = s => esc(s).replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+  (m, txt, url) => '<a href="' + url.replace(/&amp;/g,'&') + '" target="_blank" rel="noopener">' + txt + '</a>');
+
 function toast(m){
   const t = $('toast'); t.textContent = m; t.classList.add('show');
   clearTimeout(toast._x); toast._x = setTimeout(() => t.classList.remove('show'), 2400);
@@ -309,7 +314,7 @@ function taskCard(t){
   return '<div class="card ' + (isDone?'done':'') + '">' +
     '<button class="tick ' + (isDone?'on':'') + '" data-done="' + escA(t.id) + '">✓</button>' +
     '<div class="cmid"><div class="ctitle">' + esc(t.title) + '</div>' +
-    (t.detail ? '<div class="cdetail">' + esc(t.detail) + '</div>' : '') +
+    (t.detail ? '<div class="cdetail">' + rich(t.detail) + '</div>' : '') +
     '<div class="meta"><span class="chip">' + escA(t.id) + '</span>' +
     (t.type === 'ai' ? '<span class="chip ai">AI</span>' : '<span class="chip">Jen</span>') +
     (t.priority ? '<span class="chip p' + t.priority + '">' + (PRIO[t.priority] || ('P'+t.priority)) + '</span>' : '') +
@@ -335,8 +340,8 @@ function showExplain(id){
   const m = why.match(/^Why:\s*([\s\S]*?)\n\s*\n\s*How:\s*([\s\S]*)$/i);
   if(m){ why = m[1].trim(); how = m[2].trim(); }
   openModal('<h3>' + esc(t.title) + '</h3><div class="mid">' + escA(t.id) + '</div>' +
-    (why ? '<label>Why</label><p>' + esc(why) + '</p>' : '') +
-    (how ? '<label>How</label><p>' + esc(how) + '</p>' : '') +
+    (why ? '<label>Why</label><p>' + rich(why) + '</p>' : '') +
+    (how ? '<label>How</label><p>' + rich(how) + '</p>' : '') +
     '<div class="acts"><button class="btn" data-close>Close</button></div>');
 }
 
@@ -361,7 +366,7 @@ function renderLeads(){
 }
 function showLead(id){
   const l = DATA.leads.find(x => x.id === id); if(!l) return;
-  const f = (label, v) => v ? '<label>' + label + '</label><p>' + esc(v) + '</p>' : '';
+  const f = (label, v) => v ? '<label>' + label + '</label><p>' + rich(v) + '</p>' : '';
   openModal('<h3>' + esc(l.address||'Lead') + '</h3>' +
     '<div class="mid">' + esc(l.area||'') + ' · Rank ' + esc(l.rank ?? '') + ' · ' + esc(l.tier||'') + '</div>' +
     f('Property', l.property_snapshot) + f("Why it's a lead", l.why_lead) +
@@ -391,7 +396,7 @@ function renderOneTouch(){
 }
 function showOT(id){
   const r = DATA.onetouch.find(x => x.id === id); if(!r) return;
-  const f = (label, v) => v ? '<label>' + label + '</label><p>' + esc(v) + '</p>' : '';
+  const f = (label, v) => v ? '<label>' + label + '</label><p>' + rich(v) + '</p>' : '';
   const opts = ['pending','approved','completed','deferred','canceled']
     .map(s => '<option value="' + s + '"' + (r.status===s?' selected':'') + '>' + s + '</option>').join('');
   openModal('<h3>' + esc(r.name||'') + '</h3>' +
@@ -414,7 +419,7 @@ function renderActivity(){
   if(!DATA.activity.length){ $('content').innerHTML = '<div class="empty">No activity.</div>'; return; }
   $('content').innerHTML = DATA.activity.map(a => '<div class="feed">' +
     '<div class="when">' + esc(fmt(a.date) || a.date || '') + (a.task_id ? ' · ' + esc(a.task_id) : '') + '</div>' +
-    '<div class="what">' + esc(a.summary||'') + '</div>' +
+    '<div class="what">' + rich(a.summary||'') + '</div>' +
     (a.link ? '<div style="margin-top:5px"><a href="' + escA(a.link) + '" target="_blank" rel="noopener">Open link</a></div>' : '') +
     '</div>').join('');
 }
@@ -423,7 +428,7 @@ function renderNotes(){
   $('content').innerHTML = DATA.notes.map(n => '<div class="feed">' +
     '<div class="when">' + esc(fmt(n.date) || n.date || '') + ' · ' + esc(n.by||'') +
     (n.task_id ? ' · ' + esc(n.task_id) : '') + '</div>' +
-    '<div class="what">' + esc(n.note||'') + '</div></div>').join('');
+    '<div class="what">' + rich(n.note||'') + '</div></div>').join('');
 }
 
 $('fab').onclick = () => {

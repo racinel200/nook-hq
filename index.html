@@ -55,6 +55,19 @@
   .cols{display:flex;gap:22px;align-items:flex-start}
   #mainPanel{flex:1 1 0;min-width:0}
   #leadsPanel{flex:0 0 340px;min-width:0}
+  #adminPanel{flex:0 0 340px;min-width:0}
+  .cfgrow{border-bottom:1px solid var(--line);padding:12px 0}
+  .cfgrow:last-child{border-bottom:none}
+  .cfglabel{font-family:'Poppins',sans-serif;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink);font-weight:600}
+  .cfghint{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.5}
+  .cfgrow textarea{width:100%;margin-top:7px;font-family:'Epilogue',sans-serif;font-size:13px;line-height:1.5;
+    background:var(--cream);border:1px solid var(--line);border-radius:3px;padding:8px 10px;resize:vertical;min-height:44px;color:var(--ink)}
+  .cfgrow textarea:focus{outline:none;border-color:var(--muted)}
+  .cfgsave{margin-top:8px;display:flex;align-items:center;gap:10px}
+  .cfgsave .send{padding:6px 14px;font-size:12px}
+  .cfgstate{font-size:11.5px;color:var(--muted)}
+  .cfgstate.err{color:var(--nook)}
+  .cfgsub{font-family:'Urbanist',sans-serif;font-weight:500;font-size:15px;letter-spacing:.5px;margin:22px 0 2px}
   @media (min-width:941px){
     .wrap{max-width:1104px}
     #notePanel,footer{max-width:720px;margin-left:auto;margin-right:auto}
@@ -347,7 +360,7 @@
   <div class="backlink">
     <a href="#" id="leadsToggle" role="button" aria-pressed="false">&#127968; Listing Leads</a>
     <a href="onetouch.html">&#9993; One-Touch</a>
-    <a href="https://docs.google.com/spreadsheets/d/1UyL52RjajpVkHBBC9DnXEpWSAOxW0Jj-r2JU5K3qGM4/edit" target="_blank" rel="noopener">&#9638; Board Sheet</a>
+    <a href="#" id="adminToggle" role="button" aria-pressed="false" style="display:none">&#9881; Settings</a>
     <a href="https://app.followupboss.com" target="_blank" rel="noopener">&#9743; Follow Up Boss</a>
     <a href="https://mail.google.com" target="_blank" rel="noopener">&#9993; Gmail</a>
     <a href="https://calendar.google.com" target="_blank" rel="noopener">&#128197; Calendar</a>
@@ -381,6 +394,14 @@
       <div class="sumline" id="sumline"></div>
     </div>
 
+    <div class="panel" id="adminPanel" style="display:none">
+      <h2>Settings</h2>
+      <p class="leadsub">Only admins can see or change these. Saves straight to the database.</p>
+      <div id="cfgList"></div>
+      <h3 class="cfgsub">Signature blocks</h3>
+      <p class="leadsub">One per person, used on their One-Touch email.</p>
+      <div id="sigList"></div>
+    </div>
     <div class="panel" id="leadsPanel" style="display:none">
       <h2>Listing Leads</h2>
       <p class="leadsub">Sellers you can reach out to <b>today</b> &mdash; verified by your daily lead hunt. Tap an address for the full story. Always DNC-check before calling.</p>
@@ -500,7 +521,7 @@ var SHORT={listings:'Listings',presence:'Presence',convert:'Convert',ops:'System
 var PRIO_LABEL={1:'Do first',2:'This week',3:'When you can'};
 var CONFIG={apiUrl:'',projectId:'',contextTemplate:''};
 var DATA={tasks:[],activity:[],notes:[],leads:[]};
-var TAB='todo', CAT='listings';
+var TAB='todo', CAT='listings', ME_EMAIL='';
 
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function escA(s){return esc(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -815,6 +836,78 @@ function wireGoalTip(){
     });
   }
 }
+/* ---------- admin settings panel ---------- */
+var IS_ADMIN=false, ADMIN_SHOW=false;
+function cfgEsc(v){return esc(v==null?'':String(v));}
+
+function drawAdmin(){
+  var panel=document.getElementById('adminPanel'),btn=document.getElementById('adminToggle');
+  if(btn){btn.classList.toggle('on',ADMIN_SHOW);btn.setAttribute('aria-pressed',ADMIN_SHOW?'true':'false');}
+  if(!IS_ADMIN||!ADMIN_SHOW){panel.style.display='none';return;}
+  panel.style.display='block';
+}
+
+function loadAdmin(){
+  if(!IS_ADMIN)return;
+  SB.from('config').select('*').order('sort',{ascending:true}).then(function(r){
+    if(r.error)return;
+    document.getElementById('cfgList').innerHTML=(r.data||[]).map(function(c){
+      return '<div class="cfgrow" data-cfg="'+escA(c.key)+'">'
+        +'<div class="cfglabel">'+cfgEsc(c.label||c.key)+'</div>'
+        +(c.hint?'<div class="cfghint">'+cfgEsc(c.hint)+'</div>':'')
+        +'<textarea rows="2">'+cfgEsc(c.value)+'</textarea>'
+        +'<div class="cfgsave"><button class="send" data-savecfg="'+escA(c.key)+'">Save</button>'
+        +'<span class="cfgstate"></span></div></div>';
+    }).join('');
+  });
+  SB.from('signatures').select('*').order('email',{ascending:true}).then(function(r){
+    if(r.error)return;
+    document.getElementById('sigList').innerHTML=(r.data||[]).map(function(g){
+      return '<div class="cfgrow" data-sig="'+escA(g.email)+'">'
+        +'<div class="cfglabel">'+cfgEsc(g.display_name||g.email)+'</div>'
+        +'<div class="cfghint">'+cfgEsc(g.email)+'</div>'
+        +'<textarea rows="3">'+cfgEsc(g.signature)+'</textarea>'
+        +'<div class="cfgsave"><button class="send" data-savesig="'+escA(g.email)+'">Save</button>'
+        +'<span class="cfgstate"></span></div></div>';
+    }).join('');
+  });
+}
+
+function cfgSaved(row,msg,bad){
+  var st=row.querySelector('.cfgstate');
+  st.textContent=msg;st.classList.toggle('err',!!bad);
+  clearTimeout(row._t);row._t=setTimeout(function(){st.textContent='';st.classList.remove('err');},2600);
+}
+
+document.getElementById('adminPanel').addEventListener('click',function(e){
+  var b=e.target.closest('[data-savecfg],[data-savesig]');
+  if(!b)return;
+  var row=b.closest('.cfgrow'),val=row.querySelector('textarea').value;
+  b.disabled=true;
+  var q,isCfg=b.hasAttribute('data-savecfg');
+  if(isCfg){
+    q=SB.from('config').update({value:val,updated_at:new Date().toISOString(),updated_by:ME_EMAIL})
+       .eq('key',b.getAttribute('data-savecfg'));
+  }else{
+    q=SB.from('signatures').update({signature:val,updated_at:new Date().toISOString(),updated_by:ME_EMAIL})
+       .eq('email',b.getAttribute('data-savesig'));
+  }
+  q.then(function(r){
+    b.disabled=false;
+    if(r.error)return cfgSaved(row,'Couldn\u2019t save \u2014 '+r.error.message,true);
+    cfgSaved(row,'Saved');
+    if(isCfg&&b.getAttribute('data-savecfg')==='projectId')CONFIG.projectId=val;
+  });
+});
+
+document.getElementById('adminToggle').addEventListener('click',function(e){
+  e.preventDefault();
+  ADMIN_SHOW=!ADMIN_SHOW;
+  try{localStorage.setItem('nook-admin-show',ADMIN_SHOW?'1':'0');}catch(e2){}
+  drawAdmin();
+  if(ADMIN_SHOW){loadAdmin();document.getElementById('adminPanel').scrollIntoView({behavior:'smooth',block:'nearest'});}
+});
+
 function draw(){
   drawGoalTabs();
   var catTasks=DATA.tasks.filter(inCat);
@@ -1264,7 +1357,7 @@ function loadData(first){
    Google profile; falls back to initials if the image can't load. */
 function renderWho(user,extra){
   var el=document.getElementById('who');if(!el||!user)return;
-  var em=user.email||'';
+  var em=user.email||'';ME_EMAIL=em;
   var md=user.user_metadata||{};
   var nm=md.full_name||md.name||em.split('@')[0];
   var pic=md.avatar_url||md.picture||'';
@@ -1292,6 +1385,14 @@ var BOOTED=false;
 function boot(){
   if(BOOTED)return;BOOTED=true;
   SB.auth.getUser().then(function(u){if(u.data&&u.data.user)renderWho(u.data.user,'');});
+  SB.rpc('is_nook_admin').then(function(r){
+    IS_ADMIN=!!(r&&r.data);
+    if(!IS_ADMIN)return;
+    document.getElementById('adminToggle').style.display='';
+    try{ADMIN_SHOW=localStorage.getItem('nook-admin-show')==='1';}catch(e){}
+    drawAdmin();
+    if(ADMIN_SHOW)loadAdmin();
+  });
   document.getElementById('gate').style.display='none';
   document.getElementById('status').style.display='block';
   loadData(true).catch(function(){showSetup();});

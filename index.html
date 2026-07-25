@@ -20,6 +20,21 @@
   #gate{background:#fff;border:1px solid var(--line);padding:26px 16px;text-align:center;margin:18px}
   #gate p{color:var(--muted);font-size:13.5px;margin-bottom:16px;line-height:1.6}
   #gbtn{display:flex;justify-content:center}
+  #who{position:fixed;top:12px;right:14px;z-index:60}
+  #whoBtn{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--card);padding:0;cursor:pointer;overflow:hidden;display:block}
+  #whoBtn:hover{border-color:var(--muted)}
+  #whoBtn img{width:100%;height:100%;display:block;object-fit:cover}
+  #whoBtn .ini{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--nook);color:#fff;font-family:'Urbanist',sans-serif;font-size:13px;font-weight:600;letter-spacing:.5px}
+  #whoMenu{position:absolute;top:42px;right:0;min-width:228px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 16px 14px;box-shadow:0 8px 28px rgba(0,0,0,.13);display:none;text-align:center}
+  #whoMenu.open{display:block}
+  #whoMenu .av{width:56px;height:56px;border-radius:50%;margin:0 auto 9px;overflow:hidden;border:1px solid var(--line)}
+  #whoMenu .av img{width:100%;height:100%;display:block;object-fit:cover}
+  #whoMenu .av .ini{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--nook);color:#fff;font-family:'Urbanist',sans-serif;font-size:20px;font-weight:600}
+  #whoMenu .nm{font-size:14px;font-weight:600}
+  #whoMenu .em{font-size:12px;color:var(--muted);margin-top:2px;word-break:break-all}
+  #whoMenu .rl{font-size:11px;color:var(--muted);margin-top:6px;font-style:italic}
+  #whoOut{margin-top:13px;width:100%;background:none;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;color:inherit;cursor:pointer;font-family:inherit}
+  #whoOut:hover{border-color:var(--nook);color:var(--nook)}
   *{box-sizing:border-box;margin:0;padding:0}
   html{-webkit-text-size-adjust:100%}
   body{font-family:'Georgia','Times New Roman',serif;background:var(--cream);color:var(--ink);-webkit-tap-highlight-color:transparent;
@@ -233,6 +248,7 @@
 </style>
 </head>
 <body>
+<div id="who"></div>
 <div class="wrap">
   <header>
     <img class="logo" src="https://media-production.lp-cdn.com/cdn-cgi/image/format=auto,quality=85,fit=scale-down,width=320/https://media-production.lp-cdn.com/media/zbdbv6qzgekrd4zsps7z" alt="Nook Realty" onerror="this.style.display='none';document.getElementById('logotext').style.display='block'">
@@ -1086,9 +1102,39 @@ function loadData(first){
     draw();drawNotes();drawLeads();
   });
 }
+
+/* Google-style account circle, top right. Avatar comes from the signed-in
+   Google profile; falls back to initials if the image can't load. */
+function renderWho(user,extra){
+  var el=document.getElementById('who');if(!el||!user)return;
+  var em=user.email||'';
+  var md=user.user_metadata||{};
+  var nm=md.full_name||md.name||em.split('@')[0];
+  var pic=md.avatar_url||md.picture||'';
+  var ini=(nm||em).trim().charAt(0).toUpperCase()||'?';
+  function face(cls){
+    return pic
+      ? '<img src="'+pic+'" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.innerHTML=\'<span class=&quot;ini&quot;>'+ini+'</span>\'">'
+      : '<span class="ini">'+ini+'</span>';
+  }
+  el.innerHTML='<button id="whoBtn" title="'+em+'" aria-haspopup="true">'+face()+'</button>'
+    +'<div id="whoMenu"><div class="av">'+face()+'</div>'
+    +'<div class="nm">'+nm+'</div><div class="em">'+em+'</div>'
+    +(extra?'<div class="rl">'+extra+'</div>':'')
+    +'<button id="whoOut">Sign out</button></div>';
+  var menu=document.getElementById('whoMenu');
+  document.getElementById('whoBtn').onclick=function(e){e.stopPropagation();menu.classList.toggle('open');};
+  document.getElementById('whoOut').onclick=function(){
+    SB.auth.signOut().then(function(){location.reload();});
+  };
+  document.addEventListener('click',function(e){
+    if(!el.contains(e.target))menu.classList.remove('open');
+  });
+}
 var BOOTED=false;
 function boot(){
   if(BOOTED)return;BOOTED=true;
+  SB.auth.getUser().then(function(u){if(u.data&&u.data.user)renderWho(u.data.user,'');});
   document.getElementById('gate').style.display='none';
   document.getElementById('status').style.display='block';
   loadData(true).catch(function(){showSetup();});

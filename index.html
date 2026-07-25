@@ -1068,8 +1068,7 @@ document.getElementById('modalAdd').addEventListener('click',function(){
 function showSetup(){
   var s=document.getElementById('status');
   s.className='';
-  s.innerHTML='Almost there — the board can’t read its Google Sheet yet.'
-    +'<div class="steps"><b>One click fixes it:</b><br>Open the Board Sheet (link above) → Share → General access: <b>Anyone with the link</b> → Viewer → Done.<br>Then refresh this page.</div>';
+  s.innerHTML='Couldn’t load the board — refresh to try again.';
 }
 var lastLoad=0;
 function loadData(first){

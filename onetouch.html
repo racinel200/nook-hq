@@ -23,6 +23,8 @@
     padding:calc(26px + env(safe-area-inset-top,0px)) 14px calc(28px + env(safe-area-inset-bottom,0px))}
   .wrap{max-width:680px;margin:0 auto}
   header{text-align:center;margin-bottom:14px}
+  header .logo{height:56px;display:block;margin:0 auto 10px}
+  header .logotext{display:none;font-family:'Urbanist',sans-serif;font-size:26px;letter-spacing:3px;color:var(--crimson);text-transform:uppercase;margin-bottom:8px}
   header .mark{font-family:'Urbanist',sans-serif;font-weight:600;font-size:13px;letter-spacing:4px;color:var(--crimson)}
   header h1{font-family:'Urbanist',sans-serif;font-weight:600;font-size:19px;letter-spacing:2.5px;text-transform:uppercase;margin-top:2px}
   header p{color:var(--stone);font-size:13px;margin-top:6px;line-height:1.55}
@@ -104,7 +106,8 @@
 <div id="who"></div>
 <div class="wrap">
   <header>
-    <div class="mark">NOOK</div>
+    <img class="logo" src="https://media-production.lp-cdn.com/cdn-cgi/image/format=auto,quality=85,fit=scale-down,width=320/https://media-production.lp-cdn.com/media/zbdbv6qzgekrd4zsps7z" alt="Nook Realty" onerror="this.style.display='none';document.getElementById('logotext').style.display='block'">
+    <div class="logotext" id="logotext">Nook Realty</div>
     <h1>One-Touch Correspondence</h1>
     <p><b>Emails:</b> tap the circle &mdash; they send within the hour from Jen&rsquo;s Gmail. <b>Texts:</b> tap Send Text &mdash; it copies the message and opens the contact in Follow Up Boss; paste and hit send there so it goes from your FUB number. Nothing sends without a tap. <a href="./">&larr; board</a></p>
   </header>

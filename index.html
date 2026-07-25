@@ -1,1013 +1,469 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="robots" content="noindex">
-<meta name="theme-color" content="#faf8f4">
-<meta name="apple-mobile-web-app-title" content="Nook HQ">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" type="image/png" href="favicon.png">
 <title>Nook HQ</title>
+<link rel="icon" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#F6F1EA">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@600;700&family=Poppins:wght@500;600&family=Epilogue:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{--nook:#c3233d;--nook-d:#8f1a2d;--ink:#221f1f;--muted:#8a827c;--cream:#faf8f4;--card:#ffffff;--line:#f0ebe2;--gold:#c9a86a;--sage:#5a7a5e;--blue:#3f6fae;--blue-bg:#e8eef7;}
-  *{box-sizing:border-box;margin:0;padding:0}
-  html{-webkit-text-size-adjust:100%}
-  body{font-family:'Georgia','Times New Roman',serif;background:var(--cream);color:var(--ink);-webkit-tap-highlight-color:transparent;
-    padding:calc(32px + env(safe-area-inset-top,0px)) calc(20px + env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) calc(20px + env(safe-area-inset-left,0px))}
-  .wrap{max-width:720px;margin:0 auto}
-  /* v2.16 renamed Nook Board → Nook HQ; Listing Leads panel hidden behind a
-     quick-link toggle (state remembered in localStorage); new quick links:
-     RealScout, MLS, NookPW, ChatGPT
-     v2.15 One-Touch page hosted in this repo at onetouch.html (public URL,
-     Google sign-in gated to Jen; data lives in the private queue sheet) —
-     static ✉ One-Touch quick-link
-     v2.12 mobile: Listing Leads stack ABOVE the board (≤940px)
-     v2.11 seller-proposal button on lead cards (package column or packages.json → Drive folder)
-     v2.10 two-column desktop: board left, Listing Leads right; stacks on mobile */
-  .cols{display:flex;gap:22px;align-items:flex-start}
-  #mainPanel{flex:1 1 0;min-width:0}
-  #leadsPanel{flex:0 0 340px;min-width:0}
-  @media (min-width:941px){
-    .wrap{max-width:1104px}
-    #notePanel,footer{max-width:720px;margin-left:auto;margin-right:auto}
-  }
-  @media (max-width:940px){.cols{display:flex;flex-direction:column;gap:0}#leadsPanel{order:-1;flex:none}#mainPanel{flex:none}}
-  header{text-align:center;margin-bottom:12px}
-  header .logo{height:56px;display:block;margin:0 auto 10px}
-  header .logotext{display:none;font-size:26px;letter-spacing:3px;color:var(--nook);text-transform:uppercase;margin-bottom:8px}
-  header h1{font-size:22px;letter-spacing:2px;color:var(--ink);text-transform:uppercase}
-  header p{color:var(--muted);font-size:14px;margin-top:6px}
-  .backlink{text-align:center;margin-bottom:24px}
-  .backlink a{display:inline-block;background:#fff;border:1px solid #e8dfd3;color:var(--nook-d);border-radius:20px;padding:7px 16px;font-size:13px;text-decoration:none;margin:3px 3px}
-  .backlink a:hover{background:var(--nook);border-color:var(--nook);color:#fff}
-  .backlink a.on{background:var(--nook);border-color:var(--nook);color:#fff}
-  .panel{background:var(--card);border-radius:14px;padding:24px;box-shadow:0 2px 10px rgba(143,26,45,.07);margin-bottom:22px}
-  .panel h2{font-size:16px;color:var(--nook-d);letter-spacing:1px;text-transform:uppercase;margin-bottom:14px}
-  .tabs{display:flex;border-bottom:2px solid var(--line);margin-bottom:10px}
-  .tabs button{font-family:inherit;flex:1;background:none;border:none;padding:11px 2px;font-size:12.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
-  .tabs button.active{color:var(--nook-d);border-bottom-color:var(--nook);font-weight:bold}
-  .count{display:inline-block;background:#f7e6e9;color:var(--nook-d);border-radius:10px;padding:0 7px;font-size:11px;margin-left:4px;font-weight:normal}
-  .count.wait{background:var(--blue-bg);color:var(--blue)}
-  .tablegend{text-align:center;font-size:11.5px;color:var(--muted);margin-bottom:6px}
-  .tablegend .count{margin:0 2px 0 6px}
-  .subtabs{margin:2px 0 4px;text-align:center}
-  .subtabs button{font-family:inherit;background:#f6f2ea;border:1px solid #e8e1d3;color:var(--muted);border-radius:14px;padding:5px 14px;font-size:12.5px;margin:3px 2px;cursor:pointer}
-  .subtabs button.active{background:var(--nook);border-color:var(--nook);color:#fff}
-  .subtabs button.active .count{background:#fff}
-  .goalhead{text-align:center;font-size:13px;color:var(--muted);margin:8px 0 2px}
-  .goalhead b{color:var(--ink);font-weight:normal}
-  .prio-head{font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:16px 0 2px;padding-bottom:4px;border-bottom:1px dashed #e8e1d3}
-  .prio-1{color:var(--nook)}
-  .prio-2{color:#a1802f}
-  .prio-3{color:var(--sage)}
-  .prio-w{color:var(--muted)}
-  .prio-c{color:var(--blue)}
-  .task{display:flex;align-items:flex-start;gap:14px;padding:13px 6px;border-bottom:1px solid var(--line)}
-  .task:last-child{border-bottom:none}
-  .task .box{flex:0 0 26px;height:26px;border:2px solid var(--gold);border-radius:50%;margin-top:1px;position:relative;cursor:pointer;transition:all .15s;background:none;padding:0}
-  .task.p1 .box{border-color:var(--nook)}
-  .task.done .box{background:var(--sage);border-color:var(--sage);cursor:default}
-  .task.done .box:after{content:'\2713';color:#fff;position:absolute;top:1px;left:6px;font-size:16px}
-  .task.waiting .box{border-color:#ddd6c9;cursor:default}
-  .task.waiting .box:after{content:'\1F512';font-size:11px;position:absolute;top:4px;left:5px;opacity:.6}
-  .task.onclaude .box{border-color:var(--blue);cursor:default}
-  .task.onclaude .box:after{content:'\2026';color:var(--blue);position:absolute;top:-2px;left:4px;font-size:15px;letter-spacing:1px}
-  .task.onclaude{background:linear-gradient(90deg,rgba(63,111,174,.06),transparent 70%);border-radius:10px}
-  .task .body{flex:1;min-width:0}
-  .task .txt{font-size:15.5px;line-height:1.5;cursor:pointer}
-  .task.done .txt{text-decoration:line-through;color:var(--muted)}
-  .task .meta{font-size:11.5px;color:var(--muted);margin-top:3px}
-  .task .meta.claude{color:var(--blue)}
-  .task .detail{display:none;font-size:13.5px;color:#5c554f;line-height:1.55;margin-top:7px;background:#fdfcf9;border:1px solid #efe9dd;border-radius:10px;padding:10px 12px}
-  .task.open .detail{display:block}
-  .task .result{font-size:12.5px;color:var(--sage);margin-top:4px}
-  .task .result a{color:var(--blue)}
-  .chip{display:inline-block;background:#f6f0e6;color:#7a6f5d;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;margin-right:6px}
-  .chip.jen{background:#f7e6e9;color:var(--nook-d)}
-  .chip.ai{background:var(--blue-bg);color:var(--blue)}
-  .askclaude{display:inline-block;color:#b0602f;background:#faf3ec;border:1px solid #ecd9c8;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;margin-left:2px}
-  .askclaude:hover{background:#b0602f;color:#fff;border-color:#b0602f}
-  .autobtn{display:inline-block;font-family:inherit;color:#2e5c38;background:#e9f2ea;border:1px solid #b7d3bc;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer;margin-left:2px}
-  .autobtn:hover{background:var(--sage);color:#fff;border-color:var(--sage)}
-  .autoact{display:inline-block;background:#fff;color:var(--ink);border:1px solid #d8d0c4;border-radius:20px;padding:10px 24px;font-size:14px;letter-spacing:1px;text-decoration:none;font-family:inherit;cursor:pointer}
-  .autoact:hover{background:#f6f2ea;border-color:#c3bbab}
-  .closex{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;background:var(--nook);color:#fff;border:none;font-size:16px;line-height:1;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;padding:0;z-index:2}
-  .closex:hover{background:var(--nook-d)}
-  .promptbox{background:#fdfcf9;border:1px solid #e3ddd0;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.6;color:#4c4642;white-space:pre-wrap;word-break:break-word;max-height:230px;overflow-y:auto;margin-bottom:12px}
-  .autometa{font-size:12.5px;color:var(--muted);margin-bottom:10px}
-  .explainbtn{display:inline-block;font-family:inherit;color:#4a6a86;background:#eef3f8;border:1px solid #d5e0ea;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;margin-left:2px}
-  .explainbtn:hover{background:#4a6a86;color:#fff;border-color:#4a6a86}
-  .linkchip{display:inline-block;color:var(--blue);background:var(--blue-bg);border:1px solid #cddcf0;border-radius:10px;padding:0 8px;font-size:12px;text-decoration:none;white-space:nowrap;vertical-align:baseline}
-  .linkchip:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
-  .modal.exmodal a:not(.linkchip):not(.askclaude){color:var(--blue)}
-  .task .detail a:not(.linkchip){color:var(--blue)}
-  .exmodal{max-width:540px;max-height:82vh;overflow-y:auto}
-  .modal.exmodal .exid{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
-  .modal.exmodal h2{margin-bottom:12px;text-transform:none;letter-spacing:0;font-size:18px;color:var(--ink)}
-  .modal.exmodal p{font-size:14.5px;line-height:1.65;color:#4c4642;margin-bottom:12px}
-  .modal.exmodal p b{color:var(--nook-d)}
-  .modal.exmodal .actions{margin-top:8px}
-  /* In the explain popup, the automation/Claude button sits beside the big "Got it" pill —
-     render it as a matching pill so the two align instead of a tiny chip next to a button. */
-  .modal.exmodal .actions .autobtn,
-  .modal.exmodal .actions .askclaude{border-radius:20px;padding:10px 22px;font-size:13px;letter-spacing:.6px;margin-left:0}
-  .task .undo{margin-left:auto;font-size:12px;color:var(--muted);border:none;background:none;cursor:pointer;font-family:inherit;text-decoration:underline;flex-shrink:0}
-  .notebtn{display:inline-block;font-family:inherit;color:var(--nook-d);background:#fbf1f3;border:1px solid #eecdd4;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;margin-left:2px}
-  .notebtn:hover{background:var(--nook);border-color:var(--nook);color:#fff}
-  .task .tasknote{font-size:12.5px;color:#5c554f;margin-top:5px;background:#fbf7ef;border:1px solid #efe4d0;border-left:3px solid var(--gold);border-radius:8px;padding:7px 10px;line-height:1.5}
-  .task .tasknote b{color:var(--nook-d);font-weight:normal;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:2px}
-  .task .blockrow{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
-  .blockedby{display:inline-block;font-family:inherit;color:#8a6d2f;background:#fbf5e6;border:1px solid #eddcb2;border-radius:10px;padding:2px 10px;font-size:11px;letter-spacing:.3px;cursor:pointer}
-  .blockedby:hover{background:#f3e6c4;border-color:#e0c98a}
-  .blockedby.ai{color:var(--blue);background:var(--blue-bg);border-color:#cddcf0}
-  .blockedby.ai:hover{background:#dbe6f5;border-color:#b3caea}
-  @keyframes taskflash{0%{background:#fff6d8}60%{background:#fff6d8}100%{background:transparent}}
-  .task.flash{animation:taskflash 1.6s ease-out;border-radius:10px}
-  .action{display:flex;gap:12px;padding:12px 6px;border-bottom:1px solid var(--line)}
-  .action:last-child{border-bottom:none}
-  .action .dot{flex:0 0 10px;height:10px;border-radius:50%;background:var(--blue);margin-top:7px}
-  .action .txt{font-size:14.5px;line-height:1.5}
-  .action .txt a{color:var(--blue)}
-  .action .meta{font-size:11.5px;color:var(--muted);margin-top:2px}
-  .empty{color:var(--muted);text-align:center;padding:18px 0;font-size:15px}
-  .sumline{font-size:12.5px;color:var(--muted);margin:10px 2px 0;text-align:center}
-  textarea{width:100%;min-height:90px;font-family:inherit;font-size:15px;padding:12px;border:1px solid #e0d8ca;border-radius:10px;background:#fdfcf9;resize:vertical}
-  .sendrow{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
-  .sendrow small{color:var(--muted)}
-  button.send{font-family:inherit;background:var(--nook);color:#fff;border:none;border-radius:20px;padding:10px 28px;font-size:14px;letter-spacing:1px;cursor:pointer}
-  button.send:hover{background:var(--nook-d)}
-  button.send:disabled{opacity:.5}
-  .leadsub{font-size:12.5px;color:var(--muted);margin:-8px 0 10px;line-height:1.5}
-  .lead{padding:13px 6px;border-bottom:1px solid var(--line)}
-  .lead:last-child{border-bottom:none}
-  .lead .addr{font-size:15.5px;line-height:1.5;cursor:pointer}
-  .lead .sub{font-size:13px;color:#5c554f;margin-top:2px}
-  .lead .sub b{color:var(--nook-d);font-weight:normal}
-  .lead .meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);margin-top:6px}
-  .chip.lead-now{background:#e9f2ea;color:#2e5c38}
-  .leadcall{display:inline-block;font-family:inherit;color:#2e5c38;background:#e9f2ea;border:1px solid #b7d3bc;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer}
-  .leadcall:hover{background:var(--sage);color:#fff;border-color:var(--sage)}
-  .leaddismiss{display:inline-block;font-family:inherit;color:var(--muted);background:#f6f2ea;border:1px solid #e8e1d3;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;margin-left:auto}
-  .leadpkg{display:inline-block;font-family:inherit;color:#c3233d;background:#fbeaed;border:1px solid #eec3ca;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer;font-weight:600}
-  .leadpkg:hover{background:#c3233d;color:#fff;border-color:#c3233d}
-  .leadfub{display:inline-block;font-family:inherit;color:#2a5b8f;background:#eaf1f9;border:1px solid #c2d4e8;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer}
-  a.leadfub:hover{background:#2a5b8f;color:#fff;border-color:#2a5b8f}
-  .leadwt{display:inline-block;font-family:inherit;color:#5b3e8f;background:#f1ecfa;border:1px solid #d4c8ea;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer}
-  .leadwt:hover{background:#5b3e8f;color:#fff;border-color:#5b3e8f}
-  .leadwt.armed{background:var(--nook);border-color:var(--nook);color:#fff}
-  .leadwt.queued{cursor:default;opacity:.75}
-  .leadwt.queued:hover{background:#f1ecfa;color:#5b3e8f;border-color:#d4c8ea}
-  .leaddismiss:hover{color:var(--nook-d);border-color:#eecdd4;background:#fbf1f3}
-  .leaddismiss.armed{background:var(--nook);border-color:var(--nook);color:#fff}
-  .lead .detail{display:none;font-size:13.5px;color:#5c554f;line-height:1.55;margin-top:7px;background:#fdfcf9;border:1px solid #efe9dd;border-radius:10px;padding:10px 12px}
-  .lead.open .detail{display:block}
-  .lead .detail b{color:var(--nook-d);font-weight:normal;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;display:block;margin:8px 0 2px}
-  .lead .detail b:first-child{margin-top:0}
-  .note{padding:10px 6px;border-bottom:1px solid var(--line);font-size:14px}
-  .note:last-child{border-bottom:none}
-  .note .meta{font-size:11.5px;color:var(--muted);margin-top:2px}
-  .note .notetext{display:block}
-  .note.processed .notetext{text-decoration:line-through;color:var(--muted)}
-  .note .meta .notetask{color:var(--nook-d);font-weight:600}
-  .note .meta .notetask.general{color:var(--muted);font-weight:normal;font-style:italic}
-  #status{text-align:center;padding:30px;color:var(--muted)}
-  #status.error{color:var(--nook)}
-  #status .steps{display:inline-block;text-align:left;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-top:14px;font-size:14px;line-height:1.8;color:var(--ink)}
-  #content{display:none}
-  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:24px;line-height:1.6}
-  .toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:20px;padding:10px 24px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:60;max-width:90vw;text-align:center}
-  .toast.show{opacity:1}
-  .fab{position:fixed;bottom:calc(26px + env(safe-area-inset-bottom,0px));right:calc(26px + env(safe-area-inset-right,0px));width:58px;height:58px;border-radius:50%;background:var(--nook);color:#fff;border:none;font-size:30px;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(143,26,45,.35);z-index:40;font-family:inherit}
-  .fab:hover{background:var(--nook-d)}
-  .overlay{position:fixed;inset:0;background:rgba(34,31,31,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
-  .overlay.show{display:flex}
-  .modal{position:relative;background:var(--card);border-radius:16px;padding:26px;max-width:460px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25)}
-  .modal h2{font-size:16px;color:var(--nook-d);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px}
-  .modal label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px}
-  .modal input[type=text]{width:100%;font-family:inherit;font-size:15px;padding:11px 12px;border:1px solid #e0d8ca;border-radius:10px;background:#fdfcf9}
-  .pick{display:flex;flex-wrap:wrap;gap:6px}
-  .pick button{font-family:inherit;background:#f6f2ea;border:1px solid #e8e1d3;color:var(--muted);border-radius:14px;padding:7px 14px;font-size:13px;cursor:pointer}
-  .pick button.active{background:var(--ink);border-color:var(--ink);color:#fff}
-  .pick button.p1.active{background:var(--nook);border-color:var(--nook)}
-  .pick button.p2.active{background:var(--gold);border-color:var(--gold)}
-  .pick button.p3.active{background:var(--sage);border-color:var(--sage)}
-  .modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;align-items:center}
-  .modal .cancel{font-family:inherit;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;text-decoration:underline}
-  @media (max-width:480px){
-    .tabs{flex-wrap:wrap;border-bottom:none;margin-bottom:6px}
-    .tabs button{flex:1 1 50%;font-size:12px;letter-spacing:.5px;padding:10px 0;min-width:0;border-bottom:3px solid var(--line);margin-bottom:0}
-    .count{padding:0 5px;font-size:10px;margin-left:3px}
-  }
-  /* v2.8 touch sizing — phones & tablets get thumb-size tap targets; desktop unchanged */
-  @media (max-width:600px),(pointer:coarse){
-    button,.askclaude,.linkchip,.backlink a{touch-action:manipulation}
-    .backlink a{padding:9px 16px;font-size:13.5px}
-    .tabs button{padding:13px 2px;font-size:13px}
-    .count{font-size:11px}
-    .subtabs button{padding:9px 18px;font-size:13.5px;border-radius:20px;margin:4px 3px}
-    .task .box{flex:0 0 30px;height:30px}
-    .task .box:before{content:'';position:absolute;inset:-7px;border-radius:50%}
-    .task.done .box:after{top:2px;left:7px;font-size:17px}
-    .task.waiting .box:after{top:6px;left:7px;font-size:12px}
-    .task.onclaude .box:after{top:-1px;left:5px;font-size:16px}
-    .task .meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:9px}
-    .chip{margin-right:0;padding:2px 10px;font-size:11px}
-    .explainbtn,.askclaude,.autobtn,.notebtn{margin-left:0;padding:9px 15px;font-size:12.5px;border-radius:20px}
-    .autobtn{font-size:12px;letter-spacing:.3px;padding:9px 13px;text-align:center}
-    .task .blockrow{gap:8px;margin-top:9px}
-    .blockedby{padding:9px 15px;font-size:12.5px;border-radius:20px}
-    .lead .meta{gap:8px;margin-top:9px}
-    .leadcall,.lead .linkchip,.leaddismiss,.leadpkg,.leadfub,.leadwt{padding:9px 15px;font-size:12.5px;border-radius:20px}
-    .task .undo{font-size:13px;padding:6px 4px}
-  }
+:root{
+  --limestone:#F6F1EA; --ink:#0A0A0A; --crimson:#C3223B; --stone:#58524B;
+  --greige:#DAD2C8; --white:#ffffff; --ok:#5a7a5e; --warn:#c9a86a;
+  --display:'Urbanist',system-ui,sans-serif;
+  --head:'Poppins',system-ui,sans-serif;
+  --body:'Epilogue',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--limestone);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--crimson)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+#gate{position:fixed;inset:0;background:var(--limestone);display:flex;align-items:center;justify-content:center;z-index:50;padding:24px}
+#gate .box{max-width:400px;width:100%;text-align:center}
+#gate h1{font-family:var(--display);font-size:34px;letter-spacing:-.02em;margin:0 0 6px}
+#gate .sub{color:var(--stone);font-size:14px;margin-bottom:26px}
+#gate .rule{width:44px;height:2px;background:var(--crimson);margin:0 auto 26px}
+.gbtn{display:inline-flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--greige);border-radius:2px;padding:11px 20px;font-family:var(--head);font-size:14px;cursor:pointer;color:var(--ink)}
+.gbtn:hover{border-color:var(--stone)}
+.gerr{margin-top:18px;color:var(--crimson);font-size:13px;min-height:18px}
+header{border-bottom:1px solid var(--greige);background:var(--limestone);position:sticky;top:0;z-index:20}
+.hrow{display:flex;align-items:center;gap:14px;padding:15px 0}
+.brand{font-family:var(--display);font-size:21px;letter-spacing:-.01em}
+.brand .dot{color:var(--crimson)}
+.spacer{flex:1}
+.who{font-size:12px;color:var(--stone)}
+.linkbtn{background:none;border:none;font-family:var(--body);font-size:12px;color:var(--stone);cursor:pointer;text-decoration:underline;padding:0}
+.linkbtn:hover{color:var(--crimson)}
+nav{display:flex;gap:3px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+.tab{font-family:var(--head);font-size:13px;padding:6px 13px;border-radius:2px;border:1px solid transparent;background:none;cursor:pointer;color:var(--stone);white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab.on{background:var(--ink);color:var(--limestone)}
+.tab .n{opacity:.6;font-size:11px;margin-left:5px}
+.snapshot{background:var(--white);border:1px solid var(--greige);border-left:3px solid var(--warn);padding:9px 13px;margin:16px 0;font-size:12.5px;color:var(--stone);border-radius:2px}
+.pii{border-left-color:var(--crimson)}
+main{padding:4px 0 70px}
+.grouphead{font-family:var(--head);font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--stone);margin:26px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--greige)}
+.card{background:var(--white);border:1px solid var(--greige);border-radius:2px;padding:13px 15px;margin-bottom:8px;display:flex;gap:13px;align-items:flex-start}
+.card.done{opacity:.5}
+.tick{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--greige);background:none;cursor:pointer;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent}
+.tick:hover{border-color:var(--crimson)}
+.tick.on{background:var(--ink);border-color:var(--ink);color:var(--limestone)}
+.cmid{flex:1;min-width:0}
+.ctitle{font-family:var(--head);font-size:14.5px;line-height:1.35}
+.card.done .ctitle{text-decoration:line-through}
+.cdetail{font-size:13px;color:var(--stone);margin-top:4px;white-space:pre-wrap}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+.chip{font-family:var(--head);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:2px;background:var(--limestone);color:var(--stone);border:1px solid var(--greige)}
+.chip.p1{background:var(--crimson);color:#fff;border-color:var(--crimson)}
+.chip.p2{background:var(--warn);color:#3a2f14;border-color:var(--warn)}
+.chip.ai{background:var(--ink);color:var(--limestone);border-color:var(--ink)}
+.chip.blocked{background:#f3ece9;color:var(--crimson);border-color:#e8d8d8}
+.why{background:none;border:none;font-family:var(--body);font-size:11.5px;color:var(--stone);text-decoration:underline;cursor:pointer;padding:0}
+.why:hover{color:var(--crimson)}
+.tbl{width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--greige);font-size:13px}
+.tbl th{font-family:var(--head);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--stone);text-align:left;padding:9px 11px;border-bottom:1px solid var(--greige);white-space:nowrap;background:var(--limestone)}
+.tbl td{padding:9px 11px;border-bottom:1px solid var(--greige);vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr.clickable{cursor:pointer}
+.tbl tr.clickable:hover td{background:#fcfaf7}
+.scroller{overflow-x:auto;border-radius:2px}
+.tier{font-family:var(--head);font-size:10.5px;padding:2px 6px;border-radius:2px;white-space:nowrap}
+.tier-now{background:var(--crimson);color:#fff}
+.tier-soon{background:var(--warn);color:#3a2f14}
+.tier-watch{background:var(--limestone);color:var(--stone);border:1px solid var(--greige)}
+.st{font-family:var(--head);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:2px;white-space:nowrap}
+.st-pending{background:var(--limestone);color:var(--stone);border:1px solid var(--greige)}
+.st-approved{background:var(--warn);color:#3a2f14}
+.st-completed{background:var(--ok);color:#fff}
+.st-canceled,.st-deferred{background:#eee;color:#777}
+.feed{background:var(--white);border:1px solid var(--greige);border-radius:2px;padding:12px 15px;margin-bottom:7px}
+.feed .when{font-size:11px;color:var(--stone);font-family:var(--head)}
+.feed .what{font-size:13.5px;margin-top:3px}
+.empty{color:var(--stone);font-size:13.5px;padding:34px 0;text-align:center}
+.ov{position:fixed;inset:0;background:rgba(10,10,10,.45);display:none;align-items:center;justify-content:center;z-index:40;padding:20px}
+.ov.on{display:flex}
+.modal{background:var(--white);border-radius:2px;max-width:560px;width:100%;max-height:82vh;overflow-y:auto;padding:24px}
+.modal h3{font-family:var(--display);font-size:20px;margin:0 0 4px}
+.modal .mid{font-size:11.5px;color:var(--stone);font-family:var(--head);margin-bottom:16px}
+.modal p{white-space:pre-wrap;font-size:14px;margin:0 0 13px}
+.modal label{display:block;font-family:var(--head);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);margin:13px 0 5px}
+.modal input,.modal select,.modal textarea{width:100%;padding:9px 11px;border:1px solid var(--greige);border-radius:2px;font-family:var(--body);font-size:14px;background:var(--limestone)}
+.modal textarea{min-height:80px;resize:vertical}
+.mrow{display:flex;gap:10px}
+.mrow>div{flex:1}
+.acts{display:flex;gap:9px;justify-content:flex-end;margin-top:20px}
+.btn{font-family:var(--head);font-size:13px;padding:9px 18px;border-radius:2px;cursor:pointer;border:1px solid var(--greige);background:var(--white);color:var(--ink)}
+.btn.primary{background:var(--crimson);border-color:var(--crimson);color:#fff}
+.btn:hover{border-color:var(--stone)}
+.btn.primary:hover{background:#a81c32}
+.fab{position:fixed;right:22px;bottom:22px;width:50px;height:50px;border-radius:50%;background:var(--crimson);color:#fff;border:none;font-size:26px;cursor:pointer;box-shadow:0 3px 14px rgba(0,0,0,.2);z-index:15;line-height:1}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--limestone);border-radius:2px;padding:10px 22px;font-size:13px;font-family:var(--head);opacity:0;transition:opacity .3s;pointer-events:none;z-index:60;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+footer{border-top:1px solid var(--greige);margin-top:40px;padding:18px 0 30px;font-size:11px;color:var(--stone);line-height:1.7}
+@media(max-width:620px){.hrow{flex-wrap:wrap}.brand{font-size:19px}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <img class="logo" src="https://media-production.lp-cdn.com/cdn-cgi/image/format=auto,quality=85,fit=scale-down,width=320/https://media-production.lp-cdn.com/media/zbdbv6qzgekrd4zsps7z" alt="Nook Realty" onerror="this.style.display='none';document.getElementById('logotext').style.display='block'">
-    <div class="logotext" id="logotext">Nook Realty</div>
+
+<div id="gate">
+  <div class="box">
     <h1>Nook HQ</h1>
-    <p>The seller-listing plan &middot; you + your AI worker, one board</p>
-  </header>
-  <div class="backlink">
-    <a href="#" id="leadsToggle" role="button" aria-pressed="false">&#127968; Listing Leads</a>
-    <a href="onetouch.html">&#9993; One-Touch</a>
-    <a href="https://docs.google.com/spreadsheets/d/1UyL52RjajpVkHBBC9DnXEpWSAOxW0Jj-r2JU5K3qGM4/edit" target="_blank" rel="noopener">&#9638; Board Sheet</a>
-    <a href="https://app.followupboss.com" target="_blank" rel="noopener">&#9743; Follow Up Boss</a>
-    <a href="https://mail.google.com" target="_blank" rel="noopener">&#9993; Gmail</a>
-    <a href="https://calendar.google.com" target="_blank" rel="noopener">&#128197; Calendar</a>
-    <a href="https://premieragent.zillow.com/crm/" target="_blank" rel="noopener">&#9733; Zillow CRM</a>
-    <a href="https://www.canva.com" target="_blank" rel="noopener">&#9998; Canva</a>
-    <a href="https://drive.google.com/drive/u/2/folders/1BqAUugggQQk-ucG3vz9QkeWP1o1LGvHh" target="_blank" rel="noopener">&#128193; Google Drive</a>
-    <a href="https://jenniferferrara.realscout.com/agent" target="_blank" rel="noopener">&#128269; RealScout</a>
-    <a href="https://austin.clareityiam.net/idp/login" target="_blank" rel="noopener">&#127970; MLS</a>
-    <a href="https://docs.google.com/spreadsheets/d/1rDKSrCF16FkCs6PXowpHIKI-EcDZWuwwdScB9WMZGJE/edit?gid=0#gid=0" target="_blank" rel="noopener">&#128273; NookPW</a>
-    <a href="https://chatgpt.com" target="_blank" rel="noopener">&#128172; ChatGPT</a>
+    <div class="sub">Room to live the way you've always wanted.</div>
+    <div class="rule"></div>
+    <button class="gbtn" id="signin">
+      <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1c4.1-3.8 6.6-9.4 6.6-16.1z"/><path fill="#34A853" d="M24 46c6 0 11-2 14.6-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.5 2.1-5.8 0-10.7-3.9-12.4-9.1H4.3v5.7C7.9 41.1 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.6 28.1c-.4-1.3-.7-2.7-.7-4.1s.3-2.8.7-4.1v-5.7H4.3C2.8 17.1 2 20.4 2 24s.8 6.9 2.3 9.8l7.3-5.7z"/><path fill="#EA4335" d="M24 10.8c3.3 0 6.2 1.1 8.5 3.3l6.3-6.3C35 4.2 30 2 24 2 15.4 2 7.9 6.9 4.3 14.2l7.3 5.7c1.7-5.2 6.6-9.1 12.4-9.1z"/></svg>
+      Continue with Google
+    </button>
+    <div class="gerr" id="gerr"></div>
   </div>
+</div>
 
-  <div id="status">Loading your board&hellip;</div>
-
-  <div id="content">
-    <div class="cols">
-    <div class="panel" id="mainPanel">
-      <div class="tabs" id="goaltabs"></div>
-      <div class="tablegend">Numbers: <span class="count">your move</span> &middot; <span class="count wait">waiting on Claude</span></div>
-      <div class="goalhead" id="goalhead"></div>
-      <div class="subtabs" id="subtabs">
-        <button data-tab="todo" class="active">To Do<span class="count" id="n-todo"></span></button>
-        <button data-tab="done">Done</button>
-        <button data-tab="actions">Claude&rsquo;s Actions</button>
-      </div>
-      <div id="tabbody"></div>
-      <div class="sumline" id="sumline"></div>
+<header style="display:none" id="hdr">
+  <div class="wrap">
+    <div class="hrow">
+      <div class="brand">Nook <span class="dot">HQ</span></div>
+      <div class="spacer"></div>
+      <div class="who" id="who"></div>
+      <button class="linkbtn" id="signout">Sign out</button>
     </div>
+    <nav id="nav"></nav>
+  </div>
+</header>
 
-    <div class="panel" id="leadsPanel" style="display:none">
-      <h2>Listing Leads</h2>
-      <p class="leadsub">Sellers you can reach out to <b>today</b> &mdash; verified by your daily lead hunt. Tap an address for the full story. Always DNC-check before calling.</p>
-      <div id="leadlist"></div>
-    </div>
-    </div>
-
-    <div class="panel" id="notePanel">
-      <h2>Leave a note for your AI worker</h2>
-      <textarea id="notebox" placeholder="Anything on your mind &mdash; answer a question, redirect a task, share news. The worker reads it on its next hourly run."></textarea>
-      <div class="sendrow">
-        <small>Read every hour</small>
-        <button class="send" id="sendbtn">Send note</button>
-      </div>
-      <div id="notes" style="margin-top:16px"></div>
-    </div>
-
-    <footer id="footer">
-      Two kinds of tasks: <b>JEN</b> (you do it &mdash; tap the circle when done) and <b>AI</b> (the worker picks it up automatically once unblocked).
-      A task that&rsquo;s waiting shows a <b>&#128274; Blocked by</b> button &mdash; tap it to jump to the task that has to finish first. The worker runs hourly and never sends, publishes, or spends without your approval.
-      Not sure why a task is on the list? Tap <b>Explain this</b> on any card for the why and the how.
-      A green <b>Automation solution proposed</b> button means your automation scout found a shortcut &mdash; tap it for a ready-made prompt, call, text, or email.
-      <b>&#9993; One-Touch</b> (in the quick links) opens your private correspondence page &mdash; only your Google account can see it; tapping a circle there is your approval to send.
+<main style="display:none" id="main">
+  <div class="wrap">
+    <div class="snapshot" id="banner"></div>
+    <div id="content"></div>
+    <footer>
+      Nook Realty &middot; Sprout Realty, ERA Powered &middot; 2506 S Lamar Blvd Ste 1, Austin TX 78704<br>
+      Jennifer Ferrara TX License #736797 &middot; (512) 994-8080 &middot; jennifer@nookrealtygroup.com<br>
+      Equal Housing &middot; each office independently owned &amp; operated &middot; info deemed reliable but not guaranteed.
     </footer>
   </div>
-</div>
-<button class="fab" id="fab" title="Add a to-do">+</button>
+</main>
 
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <h2>Add a to-do</h2>
-    <label>What needs doing?</label>
-    <input type="text" id="newtask" maxlength="160" placeholder="e.g. Ask Sprout about the $750K routing rule">
-    <label>Priority</label>
-    <div class="pick" id="prioPick">
-      <button class="p1" data-p="1">Do first</button>
-      <button class="p2 active" data-p="2">This week</button>
-      <button class="p3" data-p="3">When you can</button>
-    </div>
-    <label>Category</label>
-    <div class="pick" id="catPick"></div>
-    <label>Who does it?</label>
-    <div class="pick" id="whoPick">
-      <button data-w="jen" class="active">Me (Jen)</button>
-      <button data-w="ai">The AI worker</button>
-    </div>
-    <div class="actions">
-      <button class="cancel" id="modalCancel">Cancel</button>
-      <button class="send" id="modalAdd">Add it</button>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="exOverlay">
-  <div class="modal exmodal">
-    <div class="exid" id="exId"></div>
-    <h2 id="exTitle"></h2>
-    <div id="exBody"></div>
-    <div class="actions">
-      <a class="askclaude" id="exClaude" target="_blank" rel="noopener" style="display:none">Do it with Claude</a>
-      <button class="send" id="exClose">Got it</button>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="autoOverlay">
-  <div class="modal exmodal">
-    <button class="closex" id="autoCloseX" aria-label="Close">&times;</button>
-    <div class="exid" id="autoId"></div>
-    <h2 id="autoTitle"></h2>
-    <div id="autoBody"></div>
-    <div class="actions" id="autoActions"></div>
-  </div>
-</div>
-
-<div class="overlay" id="noteOverlay">
-  <div class="modal">
-    <h2 id="noteTitle">Add a note</h2>
-    <p style="font-size:12.5px;color:var(--muted);margin-top:4px" id="noteSub"></p>
-    <label>Your note</label>
-    <textarea id="noteText" maxlength="1500" placeholder="What did you do, what should the worker know? e.g. Roof was replaced in 2024 — mention it in the listing. The AI worker reads this on its next hourly run."></textarea>
-    <div class="actions">
-      <button class="cancel" id="noteCancel">Cancel</button>
-      <button class="send" id="noteSave">Save note</button>
-    </div>
-  </div>
-</div>
-
+<button class="fab" id="fab" style="display:none" title="Add a task">+</button>
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
 <div class="toast" id="toast"></div>
 
-<script>
-(function(){
-'use strict';
-var SHEET='https://docs.google.com/spreadsheets/d/1UyL52RjajpVkHBBC9DnXEpWSAOxW0Jj-r2JU5K3qGM4/gviz/tq?tqx=out:csv&sheet=';
-var KEY='nook-board-2026';
-var CATS={listings:'Goal 1 · Win Listings',presence:'Goal 2 · Online Presence',convert:'Goal 3 · Convert & Score',ops:'Goal 4 · Tools & Systems'};
-var SHORT={listings:'Listings',presence:'Presence',convert:'Convert',ops:'Systems'};
-var PRIO_LABEL={1:'Do first',2:'This week',3:'When you can'};
-var CONFIG={apiUrl:'',projectId:'',contextTemplate:''};
-var DATA={tasks:[],activity:[],notes:[],leads:[]};
-var TAB='todo', CAT='listings';
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function escA(s){return esc(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function fmtDT(s){var d=new Date(s);if(isNaN(d))return String(s).slice(0,16);
-  return d.toLocaleDateString('en-US',{timeZone:'America/Chicago',month:'short',day:'numeric'})+' at '+d.toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'})+' CT';}
-function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._x);toast._x=setTimeout(function(){t.classList.remove('show');},2600);}
+/* Publishable key - safe to ship in a public page. Every table is protected by
+   Row Level Security tied to Google sign-in, so this key alone reads nothing. */
+const SUPABASE_URL = 'https://wopiuwndpuxzywtchbtt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_RpO9TVBWHAB6lAwi264W2A_T-ofVxuA';
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-function parseCSV(text){
-  var rows=[],row=[],cur='',inQ=false;
-  for(var i=0;i<text.length;i++){var ch=text[i];
-    if(inQ){ if(ch==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else inQ=false; } else cur+=ch; }
-    else { if(ch==='"') inQ=true;
-      else if(ch===','){row.push(cur);cur='';}
-      else if(ch==='\n'){row.push(cur.replace(/\r$/,''));rows.push(row);row=[];cur='';}
-      else cur+=ch; } }
-  if(cur!==''||row.length){row.push(cur.replace(/\r$/,''));rows.push(row);}
-  return rows;
+const CATS = {listings:'Goal 1 · Win Listings', presence:'Goal 2 · Online Presence',
+              convert:'Goal 3 · Convert & Score', ops:'Goal 4 · Tools & Systems'};
+const PRIO = {1:'Do first', 2:'This week', 3:'When you can'};
+const TABS = [['board','Board'],['leads','Leads'],['onetouch','One-Touch'],['activity','Activity'],['notes','Notes']];
+
+let DATA = {tasks:[], leads:[], onetouch:[], activity:[], notes:[]};
+let TAB = 'board';
+let ME = '';
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const escA = s => esc(s).replace(/"/g,'&quot;');
+
+function toast(m){
+  const t = $('toast'); t.textContent = m; t.classList.add('show');
+  clearTimeout(toast._x); toast._x = setTimeout(() => t.classList.remove('show'), 2400);
 }
-function toObjects(rows){
-  if(!rows.length) return [];
-  var hdr=rows[0].map(function(h){return String(h).trim().toLowerCase();});
-  return rows.slice(1).filter(function(r){return r.join('').trim()!=='';}).map(function(r){
-    var o={}; hdr.forEach(function(h,i){o[h]=(r[i]||'').trim();}); return o; });
+function fmt(s){
+  if(!s) return '';
+  const d = new Date(s);
+  if(isNaN(d)) return String(s).slice(0,16);
+  return d.toLocaleDateString('en-US',{timeZone:'America/Chicago',month:'short',day:'numeric'})
+       + ' · ' + d.toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'}) + ' CT';
 }
-function fetchRows(name){
-  return fetch(SHEET+encodeURIComponent(name)).then(function(r){
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return r.text();
-  }).then(function(t){
-    if(t.trim().charAt(0)==='<') throw new Error('not shared');
-    return parseCSV(t);
+
+$('signin').onclick = async () => {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider:'google',
+    options:{ redirectTo: window.location.origin + window.location.pathname }
   });
-}
-function fetchTab(name,requiredCol){
-  return fetchRows(name).then(function(rows){
-    if(!rows.length) return [];
-    var hdr=rows[0].map(function(h){return String(h).trim().toLowerCase();});
-    /* gviz falls back to the first tab when the named tab doesn't exist yet —
-       requiredCol lets us detect that and treat the tab as empty instead */
-    if(requiredCol&&hdr.indexOf(requiredCol)<0) return [];
-    return toObjects(rows);
-  });
+  if(error) $('gerr').textContent = error.message;
+};
+$('signout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+sb.auth.onAuthStateChange((_e, session) => { if(session) start(session); });
+(async () => {
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session) start(session);
+})();
+
+async function start(session){
+  if(start._done) return;
+  ME = session.user.email || '';
+  $('who').textContent = ME;
+  const ok = await loadAll();
+  if(!ok) return;
+  start._done = true;
+  $('gate').style.display = 'none';
+  $('hdr').style.display = '';
+  $('main').style.display = '';
+  $('fab').style.display = '';
+  renderNav(); render();
 }
 
-var call=function(params){
-  if(!CONFIG.apiUrl) return Promise.reject(new Error('no api'));
-  var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
-  return fetch(CONFIG.apiUrl+'?k='+KEY+'&'+qs).then(function(r){return r.json();});
+async function loadAll(){
+  const q = async (t, order, asc) => {
+    const { data, error } = await sb.from(t).select('*').order(order, {ascending: asc});
+    if(error) throw error;
+    return data || [];
+  };
+  try{
+    const [tasks, leads, onetouch, activity, notes] = await Promise.all([
+      q('tasks','id',true), q('leads','rank',true), q('onetouch','id',true),
+      q('activity','id',false), q('notes','id',false)
+    ]);
+    DATA = {tasks, leads, onetouch, activity, notes};
+    if(!tasks.length && !leads.length){
+      $('gerr').textContent = ME + ' is signed in, but this account is not on the Nook allowlist.';
+      return false;
+    }
+    return true;
+  }catch(err){
+    $('gerr').textContent = 'Signed in as ' + ME + ' - but this account has no access. ' + (err.message || '');
+    return false;
+  }
+}
+
+function counts(){
+  return {
+    board:    DATA.tasks.filter(t => t.status !== 'done').length,
+    leads:    DATA.leads.length,
+    onetouch: DATA.onetouch.filter(r => r.status === 'pending').length,
+    activity: DATA.activity.length,
+    notes:    DATA.notes.length
+  };
+}
+function renderNav(){
+  const c = counts();
+  $('nav').innerHTML = TABS.map(([k,label]) =>
+    '<button class="tab ' + (k===TAB?'on':'') + '" data-tab="' + k + '">' + label +
+    '<span class="n">' + c[k] + '</span></button>').join('');
+  $('nav').querySelectorAll('.tab').forEach(b =>
+    b.onclick = () => { TAB = b.dataset.tab; renderNav(); render(); });
+}
+
+const BANNERS = {
+  board:    'Snapshot of the Listing Engine board. Changes here stay here - your live sheet, workers and skills are untouched.',
+  leads:    'Snapshot of the All Leads tab. Read and edit freely; nothing flows back to the board or Follow Up Boss.',
+  onetouch: 'Contains real client contact details. Visible only to signed-in Nook accounts. Nothing here sends anything.',
+  activity: 'Historical worker activity, copied once from the board sheet.',
+  notes:    'Notes copied once from the board sheet.'
 };
 
-function byId(id){for(var i=0;i<DATA.tasks.length;i++)if(DATA.tasks[i].id===id)return DATA.tasks[i];return null;}
-function isDone(t){return t.status==='done';}
-function depsList(t){return String(t.deps||'').split(/[\s,]+/).filter(String);}
-function depsMet(t){return depsList(t).every(function(d){var x=byId(d);return x&&isDone(x);});}
-function isReady(t){return !isDone(t)&&depsMet(t);}
-function unmetDeps(t){return depsList(t).filter(function(d){var x=byId(d);return !x||!isDone(x);});}
-function waitingOn(t){return unmetDeps(t).map(function(d){var x=byId(d);return d+(x?' — '+x.title:'');});}
-/* a Jen task is "on Claude" when at least one unmet dependency is an AI task */
-function claudeDeps(t){return unmetDeps(t).filter(function(d){var x=byId(d);return x&&x.type==='ai';});}
-function isOnClaude(t){return t.type==='jen'&&!isDone(t)&&!depsMet(t)&&claudeDeps(t).length>0;}
-function inCat(t){return t.category===CAT;}
-/* latest note Jen left on a specific task (Notes rows tagged with this task id) */
-function noteFor(id){
-  var found=null;
-  for(var i=0;i<DATA.notes.length;i++){var n=DATA.notes[i];
-    if(n.by==='automation')continue;
-    if(String(n.taskid||'').trim()===String(id).trim())found=n;
+function render(){
+  const b = $('banner');
+  b.textContent = BANNERS[TAB];
+  b.className = 'snapshot' + (TAB === 'onetouch' ? ' pii' : '');
+  $('fab').style.display = (TAB === 'board') ? '' : 'none';
+  ({board:renderBoard, leads:renderLeads, onetouch:renderOneTouch,
+    activity:renderActivity, notes:renderNotes})[TAB]();
+}
+
+const byId = id => DATA.tasks.find(t => t.id === id);
+const depList = t => String(t.deps || '').split(/[\s,]+/).filter(Boolean);
+const unmet = t => depList(t).filter(d => { const x = byId(d); return !x || x.status !== 'done'; });
+
+function renderBoard(){
+  const open = DATA.tasks.filter(t => t.status !== 'done');
+  const done = DATA.tasks.filter(t => t.status === 'done');
+  let h = '';
+  for(const [key,label] of Object.entries(CATS)){
+    const rows = open.filter(t => (t.category||'').toLowerCase() === key);
+    if(!rows.length) continue;
+    rows.sort((a,b) => (a.priority||9) - (b.priority||9));
+    h += '<div class="grouphead">' + label + ' <span style="opacity:.6">· ' + rows.length + '</span></div>';
+    h += rows.map(taskCard).join('');
   }
-  return found;
-}
-
-
-function claudeUrl(t){
-  var tpl=CONFIG.contextTemplate||('Help me with this task from my Nook Realty board ({id}): {task} — {detail}');
-  var prompt=tpl.replace(/\{task\}/g,t.title).replace(/\{detail\}/g,t.detail||'')
-    .replace(/\{category\}/g,CATS[t.category]||t.category).replace(/\{priority\}/g,(PRIO_LABEL[t.priority]||'this week').toLowerCase())
-    .replace(/\{id\}/g,t.id);
-  return 'https://claude.ai/new?q='+encodeURIComponent(prompt)+(CONFIG.projectId?'&project='+encodeURIComponent(CONFIG.projectId):'');
-}
-
-/* ---------- automation proposals (the `automation` column) ----------
-   JSON written by the hourly automation-scout worker. Kinds:
-   claude (prompt for a project chat) · call/sms/email (one direct action,
-   business contacts only — never client info) · manual (reviewed, Jen-only:
-   the card keeps its normal "Do it with Claude" link). */
-function autoFor(t){
-  var s=String(t.automation||'').trim();
-  if(!s)return null;
-  var a;try{a=JSON.parse(s);}catch(e){return null;}
-  if(!a||!a.kind||a.kind==='manual')return null;
-  if(a.kind==='claude'&&!a.prompt)return null;
-  if((a.kind==='call'||a.kind==='sms'||a.kind==='email')&&!a.to)return null;
-  return a;
-}
-function projectChatUrl(prompt){
-  return 'https://claude.ai/new?q='+encodeURIComponent(prompt||'')
-    +(CONFIG.projectId?'&project='+encodeURIComponent(CONFIG.projectId):'');
-}
-function openAuto(id){
-  var t=byId(id);if(!t)return;
-  var a=autoFor(t);if(!a)return;
-  document.getElementById('autoId').textContent=t.id+' · Automation proposed · '+(CATS[t.category]||t.category);
-  document.getElementById('autoTitle').textContent=t.title;
-  var body='<p>'+rich(a.summary||'Your AI worker found a way to automate this.')+'</p>';
-  var act='';
-  if(a.kind==='call'){
-    body+='<div class="autometa">Calls '+esc(a.label||a.to)+(a.label?' · '+esc(a.to):'')+'</div>';
-    act='<a class="autoact" href="tel:'+escA(String(a.to).replace(/[^+\d]/g,''))+'">&#9743;&nbsp;Call</a>';
-  } else if(a.kind==='sms'){
-    body+='<div class="autometa">Text to '+esc(a.label||a.to)+'</div>';
-    if(a.body)body+='<div class="promptbox">'+esc(a.body)+'</div>';
-    act='<a class="autoact" href="sms:'+escA(String(a.to).replace(/[^+\d]/g,''))+'?&body='+encodeURIComponent(a.body||'')+'">&#128172;&nbsp;Send Text</a>';
-  } else if(a.kind==='email'){
-    body+='<div class="autometa">To: '+esc(a.to)+(a.subject?' · Subject: '+esc(a.subject):'')+'</div>';
-    if(a.body)body+='<div class="promptbox">'+esc(a.body)+'</div>';
-    act='<a class="autoact" href="mailto:'+escA(a.to)+'?subject='+encodeURIComponent(a.subject||'')+'&body='+encodeURIComponent(a.body||'')+'">&#9993;&nbsp;Send Email</a>';
-  } else {
-    body+='<div class="promptbox">'+esc(a.prompt)+'</div>';
-    act='<a class="autoact" target="_blank" rel="noopener" href="'+escA(projectChatUrl(a.prompt))+'">Finish it with Claude</a>';
+  const other = open.filter(t => !Object.keys(CATS).includes((t.category||'').toLowerCase()));
+  if(other.length){
+    h += '<div class="grouphead">Everything else <span style="opacity:.6">· ' + other.length + '</span></div>';
+    h += other.map(taskCard).join('');
   }
-  document.getElementById('autoBody').innerHTML=body;
-  document.getElementById('autoActions').innerHTML=act;
-  document.getElementById('autoCloseX').onclick=function(){document.getElementById('autoOverlay').classList.remove('show');};
-  document.getElementById('autoOverlay').classList.add('show');
-}
-document.getElementById('autoOverlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
-
-function linkify(s){
-  return esc(s).replace(/(https?:\/\/[^\s]+)/g,function(u){return '<a href="'+escA(u)+'" target="_blank" rel="noopener">view</a>';});
-}
-
-/* Rich text for explain popups, task details and notes:
-   [label](https://url) -> a named link · bare URLs -> a small "domain ↗" chip.
-   Input is escaped first, so only the anchors we build here are HTML. */
-function rich(s){
-  s=esc(s);
-  s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)<"]+)\)/g,function(_,label,u){
-    return '<a href="'+escA(u)+'" target="_blank" rel="noopener">'+label+'</a>';
-  });
-  s=s.replace(/(^|[^"'>=\w])(https?:\/\/[^\s<"]+)/g,function(_,pre,u){
-    var tail='';
-    var m=u.match(/[).,;:!?]+$/); if(m){tail=m[0];u=u.slice(0,-tail.length);}
-    var dom=u.replace(/^https?:\/\//,'').split('/')[0];
-    return pre+'<a class="linkchip" href="'+escA(u)+'" target="_blank" rel="noopener">'+esc(dom)+' ↗</a>'+tail;
-  });
-  return s;
-}
-
-function taskHtml(t,mode){
-  var onClaude=(mode==='waiting')&&isOnClaude(t);
-  var cls='task'+(isDone(t)?' done':'')+(t.priority==='1'?' p1':'')+(mode==='waiting'?(onClaude?' waiting onclaude':' waiting'):'');
-  var chips='<span class="chip '+(t.type==='ai'?'ai':'jen')+'">'+(t.type==='ai'?'AI':'JEN')+'</span>';
-  var ask='';
-  if(!isDone(t)&&t.type==='jen'){
-    ask=autoFor(t)
-      ?' <button class="autobtn" data-auto="'+escA(t.id)+'">Automation solution proposed</button>'
-      :' <a class="askclaude" target="_blank" rel="noopener" href="'+escA(claudeUrl(t))+'">Do it with Claude</a>';
+  if(done.length){
+    h += '<div class="grouphead">Done <span style="opacity:.6">· ' + done.length + '</span></div>';
+    h += done.slice(0,40).map(taskCard).join('');
   }
-  var expl=' <button class="explainbtn" data-explain="'+escA(t.id)+'">Explain this</button>';
-  var wait='';
-  if(mode==='waiting'){
-    /* one tappable "Blocked by J15" button per unmet dependency — jumps to the blocker */
-    var blockers=unmetDeps(t).map(function(d){
-      var x=byId(d);
-      return '<button class="blockedby'+(x&&x.type==='ai'?' ai':'')+'" data-goto="'+escA(d)+'"'
-        +(x?' title="'+escA(x.title)+'"':'')+'>&#128274; Blocked by '+esc(d)+'</button>';
-    }).join('');
-    wait='<div class="blockrow">'+blockers+'</div>';
-  }
-  var res=(isDone(t)&&t.result)?'<div class="result">&rarr; '+linkify(t.result)+'</div>':'';
-  var undo=(isDone(t)&&t.type==='jen'&&TAB==='done')?'<button class="undo" data-undo="'+escA(t.id)+'">undo</button>':'';
-  var box=(mode==='waiting'||isDone(t))?'<span class="box"></span>':'<button class="box" data-done="'+escA(t.id)+'" title="Mark done"></button>';
-  /* note button: "Add a note" on Jen's tasks · "Edit note" on any done task.
-     the note reaches the AI worker tagged with this task id. */
-  var existing=noteFor(t.id);
-  var noteBtn='';
-  if(isDone(t)) noteBtn=' <button class="notebtn" data-note="'+escA(t.id)+'">&#9998; '+(existing?'Edit note':'Add a note')+'</button>';
-  else if(t.type==='jen') noteBtn=' <button class="notebtn" data-note="'+escA(t.id)+'">'+(existing?'&#9998; Edit note':'&#43; Add a note')+'</button>';
-  var noteShow=existing?'<div class="tasknote"><b>Your note for the AI worker</b>'+rich(existing.note)+'</div>':'';
-  return '<div class="'+cls+'" data-tid="'+escA(t.id)+'">'+box
-    +'<div class="body"><div class="txt" data-open="'+escA(t.id)+'">'+esc(t.title)+'</div>'
-    +'<div class="meta">'+chips+expl+ask+noteBtn+'</div>'+wait+res+noteShow
-    +(t.detail?'<div class="detail">'+rich(t.detail)+'</div>':'')
-    +'</div>'+undo+'</div>';
+  $('content').innerHTML = h || '<div class="empty">Nothing on the board.</div>';
+  document.querySelectorAll('[data-done]').forEach(b => b.onclick = () => toggleDone(b.dataset.done));
+  document.querySelectorAll('[data-why]').forEach(b => b.onclick = () => showExplain(b.dataset.why));
 }
 
-function drawGoalTabs(){
-  var el=document.getElementById('goaltabs');
-  el.innerHTML=Object.keys(CATS).map(function(k){
-    var ready=DATA.tasks.filter(function(t){return t.category===k&&t.type==='jen'&&isReady(t);}).length;
-    var onClaude=DATA.tasks.filter(function(t){return t.category===k&&isOnClaude(t);}).length;
-    return '<button data-cat="'+escA(k)+'"'+(CAT===k?' class="active"':'')+' title="'+escA(CATS[k])+'">'+esc(SHORT[k])
-      +(ready?'<span class="count" title="Ready for you">'+ready+'</span>':'')
-      +(onClaude?'<span class="count wait" title="Your tasks waiting on Claude">'+onClaude+'</span>':'')
-      +'</button>';
-  }).join('');
+function taskCard(t){
+  const blocked = unmet(t);
+  const isDone = t.status === 'done';
+  return '<div class="card ' + (isDone?'done':'') + '">' +
+    '<button class="tick ' + (isDone?'on':'') + '" data-done="' + escA(t.id) + '">✓</button>' +
+    '<div class="cmid"><div class="ctitle">' + esc(t.title) + '</div>' +
+    (t.detail ? '<div class="cdetail">' + esc(t.detail) + '</div>' : '') +
+    '<div class="meta"><span class="chip">' + escA(t.id) + '</span>' +
+    (t.type === 'ai' ? '<span class="chip ai">AI</span>' : '<span class="chip">Jen</span>') +
+    (t.priority ? '<span class="chip p' + t.priority + '">' + (PRIO[t.priority] || ('P'+t.priority)) + '</span>' : '') +
+    (blocked.length ? '<span class="chip blocked">Waiting on ' + esc(blocked.join(', ')) + '</span>' : '') +
+    (t.explain ? '<button class="why" data-why="' + escA(t.id) + '">Explain this</button>' : '') +
+    '</div></div></div>';
 }
 
-function draw(){
-  drawGoalTabs();
-  var catTasks=DATA.tasks.filter(inCat);
-  var doneCount=catTasks.filter(isDone).length;
-  document.getElementById('goalhead').innerHTML='<b>'+esc(CATS[CAT])+'</b> &middot; '+doneCount+' of '+catTasks.length+' done';
-  var jenReady=catTasks.filter(function(t){return t.type==='jen'&&isReady(t);});
-  document.getElementById('n-todo').textContent=jenReady.length||'';
-  var body=document.getElementById('tabbody');
-  var html='';
-  if(TAB==='todo'){
-    var groups=[['1','prio-1'],['2','prio-2'],['3','prio-3']];
-    var shown=0;
-    groups.forEach(function(g){
-      var ts=jenReady.filter(function(t){return (t.priority||'2')===g[0];});
-      if(!ts.length)return;
-      shown+=ts.length;
-      html+='<div class="prio-head '+g[1]+'">'+PRIO_LABEL[g[0]]+'</div>'+ts.map(function(t){return taskHtml(t,'ready');}).join('');
-    });
-    var onClaude=catTasks.filter(isOnClaude);
-    if(onClaude.length){
-      html+='<div class="prio-head prio-c">Waiting on Claude ('+onClaude.length+')</div>'+onClaude.map(function(t){return taskHtml(t,'waiting');}).join('');
-    }
-    var waiting=catTasks.filter(function(t){return t.type==='jen'&&!isDone(t)&&!depsMet(t)&&!isOnClaude(t);});
-    if(waiting.length){
-      html+='<div class="prio-head prio-w">Waiting on something</div>'+waiting.map(function(t){return taskHtml(t,'waiting');}).join('');
-    }
-    if(!shown&&!onClaude.length&&!waiting.length) html='<p class="empty">Nothing here — this goal&rsquo;s all caught up. &#127881;</p>';
-    document.getElementById('sumline').textContent='Tap the circle when something’s done — the board and the AI worker both see it instantly.';
-  }
-  else if(TAB==='done'){
-    var done=catTasks.filter(isDone).sort(function(a,b){return (b.updated||'').localeCompare(a.updated||'')||b.id.localeCompare(a.id);});
-    html=done.length?done.map(function(t){return taskHtml(t,'done');}).join(''):'<p class="empty">Nothing finished yet in this goal.</p>';
-    document.getElementById('sumline').textContent=done.length+' finished in '+(CATS[CAT]||'');
-  }
-  else {
-    var queued=catTasks.filter(function(t){return t.type==='ai'&&t.status!=='done'&&isReady(t);});
-    var aiwait=catTasks.filter(function(t){return t.type==='ai'&&!isDone(t)&&!depsMet(t);});
-    html='<div class="prio-head prio-2">In the AI queue</div>';
-    html+=queued.length?queued.map(function(t){return taskHtml(t,'waiting');}).join(''):'<p class="empty">Queue is clear for this goal.</p>';
-    if(aiwait.length) html+='<div class="prio-head prio-w">Waiting on you first</div>'+aiwait.map(function(t){return taskHtml(t,'waiting');}).join('');
-    html+='<div class="prio-head prio-3">What the AI has done</div>';
-    var catIds={};catTasks.forEach(function(t){catIds[t.id]=1;});
-    var acts=DATA.activity.filter(function(a){return !a.taskid||catIds[a.taskid];}).slice().reverse();
-    html+=acts.length?acts.map(function(a){
-      var link=a.link?' <a href="'+escA(a.link)+'" target="_blank" rel="noopener">view</a>':'';
-      return '<div class="action"><div class="dot"></div><div><div class="txt">'+esc(a.summary)+link+'</div><div class="meta">'+fmtDT(a.date)+(a.taskid?' &middot; '+esc(a.taskid):'')+'</div></div></div>';
-    }).join(''):'<p class="empty">No worker runs logged for this goal yet.</p>';
-    document.getElementById('sumline').textContent='The worker runs hourly. General runs (no task id) show under every goal.';
-  }
-  body.innerHTML=html;
+async function toggleDone(id){
+  const t = byId(id); if(!t) return;
+  const next = t.status === 'done' ? 'open' : 'done';
+  const { error } = await sb.from('tasks')
+    .update({status: next, updated: new Date().toISOString()}).eq('id', id);
+  if(error) return toast('Could not save: ' + error.message);
+  t.status = next;
+  toast(next === 'done' ? id + ' marked done' : id + ' reopened');
+  renderNav(); renderBoard();
 }
 
-function drawNotes(){
-  var el=document.getElementById('notes');
-  /* newest first; for task-tagged notes keep only the latest per task so an
-     edited note doesn't show its old copy beside the new one */
-  var all=DATA.notes.filter(function(n){return n.by!=='automation';});
-  var seen={},ns=[];
-  for(var i=all.length-1;i>=0&&ns.length<5;i--){var n=all[i];var tid=String(n.taskid||'').trim();
-    if(tid){if(seen[tid])continue;seen[tid]=1;}
-    ns.push(n);
-  }
-  el.innerHTML=ns.map(function(n){
-    var st=String(n.status||'').trim().toLowerCase();
-    var processed=st==='read';
-    var tid=String(n.taskid||'').trim();
-    var t=tid?byId(tid):null;
-    var tag=tid?('<span class="notetask">'+esc(tid)+(t?' &middot; '+esc(t.title):'')+'</span>')
-               :'<span class="notetask general">General</span>';
-    var label=processed?'read by Claude':(st==='new'?'waiting for the worker':esc(n.status||''));
-    return '<div class="note'+(processed?' processed':'')+'">'
-      +'<span class="notetext">'+esc(n.note)+'</span>'
-      +'<div class="meta">'+tag+' &middot; '+fmtDT(n.date)+' &middot; '+esc(n.by||'jen')+' &middot; '+label+'</div>'
-      +'</div>';
-  }).join('');
+function showExplain(id){
+  const t = byId(id); if(!t) return;
+  let why = t.explain || '', how = '';
+  const m = why.match(/^Why:\s*([\s\S]*?)\n\s*\n\s*How:\s*([\s\S]*)$/i);
+  if(m){ why = m[1].trim(); how = m[2].trim(); }
+  openModal('<h3>' + esc(t.title) + '</h3><div class="mid">' + escA(t.id) + '</div>' +
+    (why ? '<label>Why</label><p>' + esc(why) + '</p>' : '') +
+    (how ? '<label>How</label><p>' + esc(how) + '</p>' : '') +
+    '<div class="acts"><button class="btn" data-close>Close</button></div>');
 }
 
-/* ---------- Listing Leads (All Leads tab, CONTACT NOW tier only) ----------
-   The daily seller-lead hunt writes verified leads to the "All Leads" tab.
-   Only CONTACT NOW rows (true FSBOs / confirmed expired-withdrawn — safe to
-   reach out to) are shown here. Watch/monitor rows never render on the site.
-   A lead disappears only when Jen taps ✕ Remove — the lead_dismiss API action
-   re-tiers the row to DISMISSED (row stays in the sheet so the daily hunt's
-   dedupe still sees it). Since v2.13 a lead pushed to FUB stays visible with
-   an "In FUB ↗" chip (the "FUB Link" column); the daily hunt auto-pushes
-   CONTACT NOW leads, so hiding them would empty the panel. The 🎥 button
-   queues an AI walkthrough via walkthrough_request (Apps Script v10). */
-var LEADS_NOW=[];
-/* v2.16: the panel is hidden by default — the "Listing Leads" quick-link
-   toggles it; the choice is remembered per device in localStorage. */
-var LEADS_SHOW=false;
-try{LEADS_SHOW=localStorage.getItem('nook-leads-show')==='1';}catch(e){}
-/* Seller proposal packages: a "package" column in the All Leads sheet wins;
-   otherwise packages.json in this repo maps rank (C4) → its Drive folder. */
-var PACKAGES={};
-function leadPkgUrl(l){
-  var v=String(l['package']||'').trim();
-  if(/^https?:\/\//.test(v))return v;
-  var p=PACKAGES[String(l.rank||'').trim().toUpperCase()];
-  return (p&&p.folder)||'';
+function tierClass(t){
+  const s = String(t||'').toLowerCase();
+  if(s.includes('now')) return 'tier-now';
+  if(s.includes('soon')) return 'tier-soon';
+  return 'tier-watch';
 }
-function leadPhone(s){var m=String(s||'').match(/\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/);return m?m[0]:'';}
-function leadHtml(l,i){
-  var phone=leadPhone(l['listed by']);
-  var price=String(l['asking now']||'').trim();
-  var area=String(l.area||'').trim();
-  var signal=String(l.signal||'').trim();
-  var call=phone?'<a class="leadcall" href="tel:'+escA(phone.replace(/[^\d+]/g,''))+'">&#9743; Call '+esc(phone)+'</a>':'';
-  var src=String(l.source||'').trim();
-  var srcChip=/^https?:\/\//.test(src)?'<a class="linkchip" href="'+escA(src)+'" target="_blank" rel="noopener">listing &#8599;</a>':'';
-  var d='';
-  if(String(l['property snapshot']||'').trim())d+='<b>The property</b>'+rich(l['property snapshot']);
-  if(String(l["why it's a lead (evidence)"]||'').trim())d+='<b>Why it&rsquo;s a lead</b>'+rich(l["why it's a lead (evidence)"]);
-  if(String(l['contact rules today']||'').trim())d+='<b>Contact rules</b>'+rich(l['contact rules today']);
-  if(String(l['suggested next step']||'').trim())d+='<b>Next step</b>'+rich(l['suggested next step']);
-  var pkgUrl=leadPkgUrl(l);
-  var pkgChip=pkgUrl?'<a class="leadpkg" href="'+escA(pkgUrl)+'" target="_blank" rel="noopener">&#128230; Proposal</a>':'';
-  var fubUrl=String(l['fub link']||'').trim();
-  var fubChip='';
-  if(/^https?:\/\//.test(fubUrl))fubChip='<a class="leadfub" href="'+escA(fubUrl)+'" target="_blank" rel="noopener">In FUB &#8599;</a>';
-  else if(String(l['sent to fub?']||'').trim().toLowerCase().charAt(0)==='y')fubChip='<span class="leadfub">In FUB</span>';
-  var wt=String(l['walkthrough']||'').trim();
-  var wtm=wt.match(/https?:\/\/\S+/);
-  var wtBtn;
-  if(wtm)wtBtn='<a class="leadwt" href="'+escA(wtm[0])+'" target="_blank" rel="noopener">&#127909; Walkthrough &#8599;</a>';
-  else if(wt)wtBtn='<span class="leadwt queued">&#127909; Queued</span>';
-  else wtBtn='<button class="leadwt" data-wt="'+i+'">&#127909; Walkthrough</button>';
-  return '<div class="lead" data-lead="'+i+'">'
-    +'<div class="addr" data-leadopen="'+i+'">'+esc(l.address||'')+'</div>'
-    +'<div class="sub">'+(area?esc(area)+' &middot; ':'')+(price?'<b>'+esc(price)+'</b>':'')+(signal?' &middot; '+esc(signal):'')+'</div>'
-    +'<div class="meta"><span class="chip lead-now">Contact now</span>'+call+pkgChip+fubChip+wtBtn+srcChip
-    +'<button class="leaddismiss" data-dismiss="'+i+'">&#10005; Remove</button></div>'
-    +(d?'<div class="detail">'+d+'</div>':'')
-    +'</div>';
+function renderLeads(){
+  if(!DATA.leads.length){ $('content').innerHTML = '<div class="empty">No leads.</div>'; return; }
+  const rows = DATA.leads.map(l => '<tr class="clickable" data-lead="' + l.id + '">' +
+    '<td>' + esc(l.rank ?? '') + '</td>' +
+    '<td><span class="tier ' + tierClass(l.tier) + '">' + esc(l.tier||'-') + '</span></td>' +
+    '<td><strong>' + esc(l.address||'') + '</strong><div style="color:var(--stone);font-size:12px">' + esc(l.area||'') + '</div></td>' +
+    '<td>' + esc(l.asking_now||'') + '</td><td>' + esc(l.days_listed||'') + '</td>' +
+    '<td>' + esc(l.signal||'') + '</td><td>' + esc(l.sent_to_fub||'') + '</td></tr>').join('');
+  $('content').innerHTML = '<div class="scroller"><table class="tbl"><thead><tr>' +
+    '<th>#</th><th>Tier</th><th>Address</th><th>Asking</th><th>Days</th><th>Signal</th><th>To FUB</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+  document.querySelectorAll('[data-lead]').forEach(tr => tr.onclick = () => showLead(+tr.dataset.lead));
 }
-function drawLeads(){
-  var panel=document.getElementById('leadsPanel');
-  var btn=document.getElementById('leadsToggle');
-  if(btn){btn.classList.toggle('on',LEADS_SHOW);btn.setAttribute('aria-pressed',LEADS_SHOW?'true':'false');}
-  if(!LEADS_SHOW){panel.style.display='none';return;}
-  LEADS_NOW=DATA.leads.filter(function(l){
-    return String(l.tier||'').trim().toUpperCase()==='CONTACT NOW'
-      && !l._dismissed;
-  });
-  panel.style.display='block';
-  document.getElementById('leadlist').innerHTML=LEADS_NOW.length
-    ?LEADS_NOW.map(leadHtml).join('')
-    :'<p class="empty">No contact-ready leads right now &mdash; the daily hunt keeps looking.</p>';
-}
-/* ✕ Remove is two-tap: first tap arms the button ("Tap again to remove"),
-   second tap within 3s dismisses. Optimistic UI with revert on API failure. */
-function dismissLead(i){
-  var l=LEADS_NOW[i];if(!l)return;
-  if(!CONFIG.apiUrl){needApi();return;}
-  l._dismissed=true;drawLeads();
-  toast('Lead removed — it stays in the sheet as DISMISSED.');
-  call({action:'lead_dismiss',rank:l.rank||'',address:l.address||''}).then(function(r){
-    if(!r.ok)throw new Error(r.error||'failed');
-  }).catch(function(){
-    l._dismissed=false;drawLeads();
-    toast('Couldn\u2019t remove it \u2014 the board\u2019s Apps Script needs the v7 update (see your Systems tab).');
-  });
-}
-/* 🎥 Walkthrough is two-tap like ✕ Remove: first tap arms, second within
-   3s queues the AI walkthrough task via walkthrough_request (Apps Script v10).
-   Optimistic UI: cell shows Queued instantly, reverts on API failure. */
-function requestWalkthrough(i){
-  var l=LEADS_NOW[i];if(!l)return;
-  if(!CONFIG.apiUrl){needApi();return;}
-  l['walkthrough']='Requested';drawLeads();
-  toast('Walkthrough queued — the AI builds it on its next run.');
-  call({action:'walkthrough_request',rank:l.rank||'',address:l.address||''}).then(function(r){
-    if(!r.ok)throw new Error(r.error||'failed');
-  }).catch(function(){
-    l['walkthrough']='';drawLeads();
-    toast('Couldn\u2019t queue it \u2014 the board\u2019s Apps Script needs the v10 update.');
-  });
-}
-document.getElementById('leadsToggle').addEventListener('click',function(e){
-  e.preventDefault();
-  LEADS_SHOW=!LEADS_SHOW;
-  try{localStorage.setItem('nook-leads-show',LEADS_SHOW?'1':'0');}catch(e2){}
-  drawLeads();
-  if(LEADS_SHOW)document.getElementById('leadsPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
-});
-document.getElementById('leadlist').addEventListener('click',function(e){
-  var w=e.target.closest('[data-wt]');
-  if(w){
-    if(w.classList.contains('armed')){requestWalkthrough(parseInt(w.getAttribute('data-wt'),10));}
-    else{
-      w.classList.add('armed');w.innerHTML='Tap again to queue';
-      setTimeout(function(){if(w&&w.isConnected){w.classList.remove('armed');w.innerHTML='&#127909; Walkthrough';}},3000);
-    }
-    return;
-  }
-  var x=e.target.closest('[data-dismiss]');
-  if(x){
-    if(x.classList.contains('armed')){dismissLead(parseInt(x.getAttribute('data-dismiss'),10));}
-    else{
-      x.classList.add('armed');x.innerHTML='Tap again to remove';
-      setTimeout(function(){if(x&&x.isConnected){x.classList.remove('armed');x.innerHTML='&#10005; Remove';}},3000);
-    }
-    return;
-  }
-  var o=e.target.closest('[data-leadopen]');
-  if(o){o.closest('.lead').classList.toggle('open');}
-});
-
-/* ---------- explain popup ---------- */
-function explainText(t){
-  /* the `explain` column in the Tasks sheet is the single source of truth */
-  return String(t.explain||'').trim();
-}
-function openExplain(id){
-  var t=byId(id);if(!t)return;
-  document.getElementById('exId').textContent=t.id+' · '+(t.type==='ai'?'AI task':'Jen task')+' · '+(CATS[t.category]||t.category);
-  document.getElementById('exTitle').textContent=t.title;
-  var body=document.getElementById('exBody');
-  var s=explainText(t);
-  if(s){
-    body.innerHTML=s.split(/\n\s*\n/).map(function(p){
-      return '<p>'+rich(p).replace(/^(Why|How):/,'<b>$1:</b>').replace(/\n/g,'<br>')+'</p>';
-    }).join('');
-  } else {
-    body.innerHTML='<p>No written explanation for this one yet '
-      +(t.detail?'— the short version: '+rich(t.detail):'')
-      +'</p><p>Ask Claude in any chat to “explain task '+esc(t.id)+'” and it’ll write one onto the board.</p>';
-  }
-  var a=document.getElementById('exClaude');
-  var auto=(!isDone(t)&&t.type==='jen')?autoFor(t):null;
-  if(auto){
-    a.textContent='Automation solution proposed';a.className='autobtn';
-    a.removeAttribute('href');a.removeAttribute('target');
-    a.onclick=function(ev){ev.preventDefault();document.getElementById('exOverlay').classList.remove('show');openAuto(t.id);};
-    a.style.display='inline-block';
-  } else if(!isDone(t)&&t.type==='jen'){
-    a.textContent='Do it with Claude';a.className='askclaude';
-    a.href=claudeUrl(t);a.setAttribute('target','_blank');a.onclick=null;
-    a.style.display='inline-block';
-  }
-  else a.style.display='none';
-  document.getElementById('exOverlay').classList.add('show');
-}
-document.getElementById('exClose').addEventListener('click',function(){document.getElementById('exOverlay').classList.remove('show');});
-document.getElementById('exOverlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
-
-/* ---------- events (delegated) ---------- */
-document.getElementById('tabbody').addEventListener('click',function(e){
-  var x=e.target.closest('[data-explain]');
-  if(x){openExplain(x.getAttribute('data-explain'));return;}
-  var au=e.target.closest('[data-auto]');
-  if(au){openAuto(au.getAttribute('data-auto'));return;}
-  var d=e.target.closest('[data-done]');
-  if(d){markDone(d.getAttribute('data-done'));return;}
-  var u=e.target.closest('[data-undo]');
-  if(u){markUndo(u.getAttribute('data-undo'));return;}
-  var nt=e.target.closest('[data-note]');
-  if(nt){openNote(nt.getAttribute('data-note'));return;}
-  var g=e.target.closest('[data-goto]');
-  if(g){gotoTask(g.getAttribute('data-goto'));return;}
-  var o=e.target.closest('[data-open]');
-  if(o){o.closest('.task').classList.toggle('open');}
-});
-
-/* jump from a "Blocked by J15" button to the blocking task: switch to its goal
-   tab and the sub-tab it lives under, redraw, then scroll to it and flash it. */
-function gotoTask(id){
-  var t=byId(id);
-  if(!t){toast('Can’t find task '+id+'.');return;}
-  var wantTab=(t.type==='ai')?'actions':(isDone(t)?'done':'todo');
-  var changed=false;
-  if(CAT!==t.category){CAT=t.category;changed=true;}
-  if(TAB!==wantTab){
-    TAB=wantTab;
-    document.querySelectorAll('#subtabs button').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-tab')===wantTab);});
-    changed=true;
-  }
-  if(changed)draw();
-  /* AI tasks that are already ready sit in the queue as task cards; if a blocker
-     has no card in the current view, fall back to opening its explanation. */
-  var el=document.querySelector('#tabbody .task[data-tid="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]');
-  if(!el){openExplain(id);return;}
-  el.scrollIntoView({behavior:'smooth',block:'center'});
-  el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');
-}
-document.getElementById('goaltabs').addEventListener('click',function(e){
-  var b=e.target.closest('button');if(!b)return;
-  CAT=b.getAttribute('data-cat');draw();
-});
-document.getElementById('subtabs').addEventListener('click',function(e){
-  var b=e.target.closest('button');if(!b)return;
-  TAB=b.getAttribute('data-tab');
-  document.querySelectorAll('#subtabs button').forEach(function(x){x.classList.toggle('active',x===b);});
-  draw();
-});
-
-function needApi(){toast('One setup step left: deploy the Apps Script and paste its URL into the sheet’s Config tab.');}
-
-function markDone(id){
-  var t=byId(id);if(!t)return;
-  if(!CONFIG.apiUrl){needApi();return;}
-  t.status='done';t.updated=new Date().toISOString();
-  DATA.tasks.forEach(function(x){if(x.status==='blocked'&&depsMet(x))x.status='todo';});
-  draw();toast('Marked '+id+' done — nice ✓');
-  call({action:'done',id:id}).then(function(r){if(!r.ok)throw new Error(r.error);})
-  .catch(function(){t.status='todo';draw();toast('Couldn’t save that — try again.');});
-}
-function markUndo(id){
-  var t=byId(id);if(!t)return;
-  if(!CONFIG.apiUrl){needApi();return;}
-  t.status='todo';t.result='';draw();
-  call({action:'undo',id:id}).catch(function(){t.status='done';draw();toast('Couldn’t undo — try again.');});
+function showLead(id){
+  const l = DATA.leads.find(x => x.id === id); if(!l) return;
+  const f = (label, v) => v ? '<label>' + label + '</label><p>' + esc(v) + '</p>' : '';
+  openModal('<h3>' + esc(l.address||'Lead') + '</h3>' +
+    '<div class="mid">' + esc(l.area||'') + ' · Rank ' + esc(l.rank ?? '') + ' · ' + esc(l.tier||'') + '</div>' +
+    f('Property', l.property_snapshot) + f("Why it's a lead", l.why_lead) +
+    f('Contact rules today', l.contact_rules) + f('Suggested next step', l.next_step) +
+    f('Listed by', l.listed_by) + f('Notes', l.jen_notes) +
+    '<div class="acts"><button class="btn" data-close>Close</button></div>');
 }
 
-/* note box */
-document.getElementById('sendbtn').addEventListener('click',function(){
-  var box=document.getElementById('notebox');var txt=box.value.trim();
-  if(!txt)return;
-  if(!CONFIG.apiUrl){needApi();return;}
-  var btn=this;btn.disabled=true;
-  call({action:'note',text:txt,by:'jen'}).then(function(r){
-    if(!r.ok)throw new Error(r.error);
-    DATA.notes.push({date:new Date().toISOString(),by:'jen',note:txt,status:'new'});
-    box.value='';drawNotes();toast('Note sent — the worker reads it within the hour.');
-  }).catch(function(){toast('Couldn’t send — try again.');}).then(function(){btn.disabled=false;});
-});
+function renderOneTouch(){
+  if(!DATA.onetouch.length){ $('content').innerHTML = '<div class="empty">Queue is empty.</div>'; return; }
+  const order = {pending:0, approved:1, deferred:2, completed:3, canceled:4};
+  const rows = [...DATA.onetouch].sort((a,b) =>
+    (order[a.status] ?? 9) - (order[b.status] ?? 9) ||
+    String(a.id).localeCompare(String(b.id), undefined, {numeric:true}));
+  $('content').innerHTML = '<div class="scroller"><table class="tbl"><thead><tr>' +
+    '<th>ID</th><th>Who</th><th>Trigger</th><th>Channel</th><th>Status</th><th>Message</th>' +
+    '</tr></thead><tbody>' + rows.map(r => {
+      const msg = String(r.message || '');
+      return '<tr class="clickable" data-ot="' + escA(r.id) + '">' +
+        '<td>' + esc(r.id) + '</td>' +
+        '<td><strong>' + esc(r.name||'') + '</strong><div style="color:var(--stone);font-size:12px">' + esc(r.assigned_to||'') + '</div></td>' +
+        '<td>' + esc(r.trigger||'') + '</td><td>' + esc(r.channel||'') + '</td>' +
+        '<td><span class="st st-' + esc(r.status||'pending') + '">' + esc(r.status||'') + '</span></td>' +
+        '<td style="max-width:320px;color:var(--stone)">' + esc(msg.slice(0,90)) + (msg.length>90?'…':'') + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+  document.querySelectorAll('[data-ot]').forEach(tr => tr.onclick = () => showOT(tr.dataset.ot));
+}
+function showOT(id){
+  const r = DATA.onetouch.find(x => x.id === id); if(!r) return;
+  const f = (label, v) => v ? '<label>' + label + '</label><p>' + esc(v) + '</p>' : '';
+  const opts = ['pending','approved','completed','deferred','canceled']
+    .map(s => '<option value="' + s + '"' + (r.status===s?' selected':'') + '>' + s + '</option>').join('');
+  openModal('<h3>' + esc(r.name||'') + '</h3>' +
+    '<div class="mid">' + esc(r.id) + ' · ' + esc(r.trigger||'') + ' · ' + esc(r.channel||'') + '</div>' +
+    f('To', r.to_addr) + f('Subject', r.subject) + f('Message', r.message) +
+    f('Why it was drafted', r.reason) + f('Notes', r.notes) +
+    '<label>Status</label><select id="otStatus">' + opts + '</select>' +
+    '<div class="acts"><button class="btn" data-close>Close</button>' +
+    '<button class="btn primary" id="otSave">Save status</button></div>');
+  $('otSave').onclick = async () => {
+    const next = $('otStatus').value;
+    const { error } = await sb.from('onetouch')
+      .update({status: next, updated: new Date().toISOString()}).eq('id', id);
+    if(error) return toast('Could not save: ' + error.message);
+    r.status = next; closeModal(); renderNav(); renderOneTouch(); toast(id + ' → ' + next);
+  };
+}
 
-/* per-task note modal */
-var noteTaskId=null;
-function openNote(id){
-  var t=byId(id);if(!t)return;
-  noteTaskId=id;
-  var existing=noteFor(id);
-  document.getElementById('noteTitle').textContent=existing?('Edit note — '+id):('Add a note — '+id);
-  document.getElementById('noteSub').textContent=t.title;
-  document.getElementById('noteText').value=existing?existing.note:'';
-  document.getElementById('noteOverlay').classList.add('show');
-  document.getElementById('noteText').focus();
+function renderActivity(){
+  if(!DATA.activity.length){ $('content').innerHTML = '<div class="empty">No activity.</div>'; return; }
+  $('content').innerHTML = DATA.activity.map(a => '<div class="feed">' +
+    '<div class="when">' + esc(fmt(a.date) || a.date || '') + (a.task_id ? ' · ' + esc(a.task_id) : '') + '</div>' +
+    '<div class="what">' + esc(a.summary||'') + '</div>' +
+    (a.link ? '<div style="margin-top:5px"><a href="' + escA(a.link) + '" target="_blank" rel="noopener">Open link</a></div>' : '') +
+    '</div>').join('');
 }
-function closeNote(){document.getElementById('noteOverlay').classList.remove('show');noteTaskId=null;}
-document.getElementById('noteCancel').addEventListener('click',closeNote);
-document.getElementById('noteOverlay').addEventListener('click',function(e){if(e.target===this)closeNote();});
-document.getElementById('noteSave').addEventListener('click',function(){
-  var txt=document.getElementById('noteText').value.trim();
-  if(!txt){toast('Type a note first.');return;}
-  if(!noteTaskId)return;
-  if(!CONFIG.apiUrl){needApi();return;}
-  var id=noteTaskId,btn=this;btn.disabled=true;
-  call({action:'note',text:txt,by:'jen',taskId:id}).then(function(r){
-    if(!r.ok)throw new Error(r.error);
-    /* one note per task on the card: drop any prior note for this id, add the new one */
-    DATA.notes=DATA.notes.filter(function(n){return !(String(n.taskid||'').trim()===id&&n.by!=='automation');});
-    DATA.notes.push({date:new Date().toISOString(),by:'jen',note:txt,status:'new',taskid:id});
-    closeNote();draw();drawNotes();toast('Note saved for '+id+' — the worker reads it within the hour.');
-  }).catch(function(){toast('Couldn’t save that note — try again.');}).then(function(){btn.disabled=false;});
-});
+function renderNotes(){
+  if(!DATA.notes.length){ $('content').innerHTML = '<div class="empty">No notes.</div>'; return; }
+  $('content').innerHTML = DATA.notes.map(n => '<div class="feed">' +
+    '<div class="when">' + esc(fmt(n.date) || n.date || '') + ' · ' + esc(n.by||'') +
+    (n.task_id ? ' · ' + esc(n.task_id) : '') + '</div>' +
+    '<div class="what">' + esc(n.note||'') + '</div></div>').join('');
+}
 
-/* add-task modal */
-var newPrio='2',newCat='listings',newWho='jen';
-(function(){
-  var cp=document.getElementById('catPick');
-  cp.innerHTML=Object.keys(CATS).map(function(k){
-    return '<button data-c="'+k+'"'+(k===newCat?' class="active"':'')+'>'+esc(CATS[k])+'</button>';}).join('');
-})();
-function pickWire(id,attr,set){
-  document.getElementById(id).addEventListener('click',function(e){
-    var b=e.target.closest('button');if(!b)return;
-    this.querySelectorAll('button').forEach(function(x){x.classList.toggle('active',x===b);});
-    set(b.getAttribute(attr));
-  });
-}
-pickWire('prioPick','data-p',function(v){newPrio=v;});
-pickWire('catPick','data-c',function(v){newCat=v;});
-pickWire('whoPick','data-w',function(v){newWho=v;});
-document.getElementById('fab').addEventListener('click',function(){
-  /* default the category picker to the goal tab Jen is looking at */
-  newCat=CAT;
-  document.querySelectorAll('#catPick button').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-c')===newCat);});
-  document.getElementById('overlay').classList.add('show');document.getElementById('newtask').focus();
-});
-document.getElementById('modalCancel').addEventListener('click',function(){document.getElementById('overlay').classList.remove('show');});
-document.getElementById('overlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
-document.getElementById('modalAdd').addEventListener('click',function(){
-  var inp=document.getElementById('newtask');var title=inp.value.trim();
-  if(!title){toast('Give it a name first.');return;}
-  if(!CONFIG.apiUrl){needApi();return;}
-  var btn=this;btn.disabled=true;
-  call({action:'add',title:title,priority:newPrio,category:newCat,type:newWho}).then(function(r){
-    if(!r.ok)throw new Error(r.error);
-    DATA.tasks.push({id:r.id,type:newWho,category:newCat,priority:newPrio,status:'todo',title:title,detail:'',deps:'',unlocks:'',result:'',updated:new Date().toISOString()});
-    inp.value='';document.getElementById('overlay').classList.remove('show');
-    draw();toast('Added '+r.id+(newWho==='ai'?' — the worker will pick it up.':''));
-  }).catch(function(){toast('Couldn’t add — try again.');}).then(function(){btn.disabled=false;});
-});
+$('fab').onclick = () => {
+  const cats = Object.entries(CATS).map(([k,v]) => '<option value="' + k + '">' + v + '</option>').join('');
+  const prios = Object.entries(PRIO).map(([k,v]) => '<option value="' + k + '">' + v + '</option>').join('');
+  openModal('<h3>Add a task</h3><div class="mid">Saved to Nook HQ only</div>' +
+    '<label>Title</label><input id="fTitle" placeholder="What needs doing?">' +
+    '<label>Detail</label><textarea id="fDetail" placeholder="Optional"></textarea>' +
+    '<div class="mrow"><div><label>Category</label><select id="fCat">' + cats + '</select></div>' +
+    '<div><label>Priority</label><select id="fPrio">' + prios + '</select></div></div>' +
+    '<label>Owner</label><select id="fType"><option value="jen">Jen</option><option value="ai">AI</option></select>' +
+    '<div class="acts"><button class="btn" data-close>Cancel</button>' +
+    '<button class="btn primary" id="fSave">Add task</button></div>');
+  $('fSave').onclick = addTask;
+};
 
-/* ---------- load ---------- */
-function showSetup(){
-  var s=document.getElementById('status');
-  s.className='';
-  s.innerHTML='Almost there — the board can’t read its Google Sheet yet.'
-    +'<div class="steps"><b>One click fixes it:</b><br>Open the Board Sheet (link above) → Share → General access: <b>Anyone with the link</b> → Viewer → Done.<br>Then refresh this page.</div>';
+async function addTask(){
+  const title = $('fTitle').value.trim();
+  if(!title) return toast('Give it a title');
+  const nums = DATA.tasks.map(t => parseInt(String(t.id).replace(/\D/g,''),10) || 0);
+  const id = 'H' + (Math.max(0, ...nums) + 1);
+  const row = {
+    id: id, title: title,
+    detail: $('fDetail').value.trim() || null,
+    category: $('fCat').value,
+    priority: parseInt($('fPrio').value, 10),
+    type: $('fType').value,
+    status: 'open',
+    updated: new Date().toISOString()
+  };
+  const { error } = await sb.from('tasks').insert(row);
+  if(error) return toast('Could not add: ' + error.message);
+  DATA.tasks.push(row); closeModal(); renderNav(); renderBoard(); toast(id + ' added');
 }
-var lastLoad=0;
-function loadData(first){
-  return Promise.all([
-    fetchRows('Config').catch(function(){return [];}),
-    fetchTab('Tasks','id'),
-    fetchTab('Activity','summary').catch(function(){return [];}),
-    fetchTab('Notes','note').catch(function(){return [];}),
-    fetchTab('All Leads','tier').catch(function(){return [];}),
-    fetch('packages.json?v='+Date.now()).then(function(r){return r.ok?r.json():{};}).catch(function(){return {};})
-  ]).then(function(res){
-    res[0].forEach(function(r){var k=String(r[0]||'').trim(),v=String(r[1]||'').trim();if(k&&CONFIG.hasOwnProperty(k))CONFIG[k]=v;});
-    DATA.tasks=res[1];
-    DATA.activity=res[2];
-    DATA.notes=res[3];
-    DATA.leads=res[4];
-    PACKAGES=res[5]||{};
-    lastLoad=Date.now();
-    if(first){
-      /* open on the goal with the most tasks ready for Jen */
-      var best=CAT,bestN=-1;
-      Object.keys(CATS).forEach(function(k){
-        var n=DATA.tasks.filter(function(t){return t.category===k&&t.type==='jen'&&isReady(t);}).length;
-        if(n>bestN){bestN=n;best=k;}
-      });
-      CAT=best;
-      document.getElementById('status').style.display='none';
-      document.getElementById('content').style.display='block';
-    }
-    draw();drawNotes();drawLeads();
-  });
-}
-loadData(true).catch(function(){showSetup();});
-/* app mode: silently re-fetch the board when it comes back to the foreground */
-document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible'&&Date.now()-lastLoad>60000){
-    loadData(false).catch(function(){/* keep showing what we have */});
-  }
-});
-})();
+
+function openModal(html){ $('modal').innerHTML = html; $('ov').classList.add('on');
+  document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeModal); }
+function closeModal(){ $('ov').classList.remove('on'); }
+$('ov').onclick = e => { if(e.target === $('ov')) closeModal(); };
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
 </script>
 </body>
 </html>

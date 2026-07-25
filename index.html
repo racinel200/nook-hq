@@ -13,10 +13,13 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Nook HQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600&family=Poppins:wght@500;600&family=Epilogue:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{--nook:#c3233d;--nook-d:#8f1a2d;--ink:#221f1f;--muted:#8a827c;--cream:#faf8f4;--card:#ffffff;--line:#f0ebe2;--gold:#c9a86a;--sage:#5a7a5e;--blue:#3f6fae;--blue-bg:#e8eef7;}
+  :root{--nook:#C3223B;--nook-d:#8f1a2d;--ink:#0A0A0A;--muted:#58524B;--cream:#F6F1EA;--card:#ffffff;--line:#DAD2C8;--gold:#a1802f;--sage:#5a7a5e;--blue:#3f6fae;--blue-bg:#e8eef7;}
   #gate{background:#fff;border:1px solid var(--line);padding:26px 16px;text-align:center;margin:18px}
   #gate p{color:var(--muted);font-size:13.5px;margin-bottom:16px;line-height:1.6}
   #gbtn{display:flex;justify-content:center}
@@ -245,6 +248,55 @@
     .leadcall,.lead .linkchip,.leaddismiss,.leadpkg,.leadfub,.leadwt{padding:9px 15px;font-size:12.5px;border-radius:20px}
     .task .undo{font-size:13px;padding:6px 4px}
   }
+
+  /* ---------- Nook brand kit ---------- */
+  body{font-family:'Epilogue',-apple-system,system-ui,'Segoe UI',Roboto,sans-serif}
+  header h1{font-family:'Urbanist',sans-serif;font-weight:300;font-size:30px;letter-spacing:6px}
+  header p{font-family:'Epilogue',sans-serif;font-size:12px;color:var(--muted)}
+  header .sigline{font-size:12px;color:var(--muted);font-style:italic;margin-top:6px}
+  header .rule{width:38px;height:2px;background:var(--nook);margin:15px auto 0}
+  .backlink{display:flex;flex-wrap:wrap;justify-content:center;gap:0;margin:17px 0 20px}
+  .backlink a{font-family:'Poppins',sans-serif;font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;
+    color:var(--muted);background:none;border:none;border-right:1px solid var(--line);border-radius:0;padding:0 9px;box-shadow:none}
+  .backlink a:last-child{border-right:none}
+  .backlink a:hover,.backlink a.on{color:var(--nook);background:none}
+  .tabs .tab,.tabs a{font-family:'Poppins',sans-serif;font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase}
+  .prio-head{font-family:'Poppins',sans-serif;font-size:9.5px;letter-spacing:1.6px;text-transform:uppercase;
+    color:var(--muted);background:none;border:none;padding:0;margin:20px 0 9px}
+  .task{background:none;border:none;border-bottom:1px solid var(--line);border-radius:0;box-shadow:none;padding:13px 0}
+  .task .txt{font-size:14.5px;line-height:1.4}
+  .task .meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+  .chip.jen,.chip.ai{display:none}
+  .explainbtn,.autobtn,.notebtn,.askclaude,.blockedby,.undo,.leadcall,.leadpkg,.leadfub,.leadwt,.leaddismiss,.linkchip{
+    font-family:'Epilogue',sans-serif;font-size:13px;font-weight:400;letter-spacing:0;text-transform:none;
+    border:1px solid var(--line);border-radius:3px;padding:7px 13px;background:#fff;color:var(--ink);
+    line-height:1.35;cursor:pointer;display:inline-block;text-decoration:none}
+  .explainbtn:hover,.autobtn:hover,.notebtn:hover,.askclaude:hover,.leadcall:hover,.leadpkg:hover,
+  .leadfub:hover,.leadwt:hover,.leaddismiss:hover,.linkchip:hover{border-color:var(--muted)}
+  .autobtn,.askclaude,.leadcall{color:var(--nook);border-color:var(--nook)}
+  .armed{background:var(--nook)!important;border-color:var(--nook)!important;color:#fff!important}
+  .tasknote{background:#fff;border:1px solid var(--line);border-radius:3px;padding:10px 12px;margin-top:10px;font-size:13px;line-height:1.55}
+  .tasknote b{display:block;font-family:'Poppins',sans-serif;font-size:9.5px;letter-spacing:1.1px;
+    text-transform:uppercase;color:var(--muted);margin-bottom:5px;font-weight:600}
+  .tasknote.worker{border-left:2px solid var(--nook)}
+  /* leads: collapsed to a summary, everything else on tap */
+  .lead{background:#fff;border:1px solid var(--line);border-radius:3px;padding:13px 14px;cursor:pointer}
+  .lead .addr{font-family:'Urbanist',sans-serif;font-weight:500;font-size:15px;line-height:1.3}
+  .lead .addr::after{content:'+';float:right;color:var(--muted);font-size:15px;line-height:1}
+  .lead.open .addr::after{content:'\2212'}
+  .lead .sub{font-size:12px;color:var(--muted);margin-top:4px}
+  .lead .sub b{color:var(--nook);font-weight:500}
+  .lead .tier{margin-top:9px}
+  .lead .tier .chip{font-family:'Poppins',sans-serif;font-size:9px;letter-spacing:1.1px;text-transform:uppercase;
+    color:var(--nook);background:none;border:1px solid var(--nook);border-radius:2px;padding:2px 7px}
+  .lead .meta{display:none;flex-wrap:wrap;gap:8px;border-top:1px solid var(--line);margin-top:11px;padding-top:11px}
+  .lead.open .meta{display:flex}
+  #notePanel h2{font-family:'Urbanist',sans-serif;font-weight:500;font-size:16px;letter-spacing:1px}
+  #notebox{font-family:'Epilogue',sans-serif;font-size:13px;background:var(--cream);border:1px solid var(--line);border-radius:3px}
+  .send{font-family:'Epilogue',sans-serif;font-size:13px;background:var(--nook);color:#fff;border:1px solid var(--nook);
+    border-radius:3px;padding:8px 18px;text-transform:none;letter-spacing:0}
+  .compliance{border-top:1px solid var(--line);margin-top:18px;padding-top:12px;font-size:9.5px;
+    color:var(--muted);text-align:center;line-height:1.7}
 </style>
 </head>
 <body>
@@ -255,6 +307,8 @@
     <div class="logotext" id="logotext">Nook Realty</div>
     <h1>Nook HQ</h1>
     <p>The seller-listing plan &middot; you + your AI worker, one board</p>
+    <div class="sigline">Room to live the way you&rsquo;ve always wanted.</div>
+    <div class="rule"></div>
   </header>
   <div class="backlink">
     <a href="#" id="leadsToggle" role="button" aria-pressed="false">&#127968; Listing Leads</a>
@@ -312,11 +366,13 @@
     </div>
 
     <footer id="footer">
-      Two kinds of tasks: <b>JEN</b> (you do it &mdash; tap the circle when done) and <b>AI</b> (the worker picks it up automatically once unblocked).
       A task that&rsquo;s waiting shows a <b>&#128274; Blocked by</b> button &mdash; tap it to jump to the task that has to finish first. The worker runs hourly and never sends, publishes, or spends without your approval.
       Not sure why a task is on the list? Tap <b>Explain this</b> on any card for the why and the how.
       A green <b>Automation solution proposed</b> button means your automation scout found a shortcut &mdash; tap it for a ready-made prompt, call, text, or email.
       <b>&#9993; One-Touch</b> (in the quick links) opens your private correspondence page &mdash; only your Google account can see it; tapping a circle there is your approval to send.
+      <div class="compliance">Nook Realty &middot; Sprout Realty, ERA Powered &middot; 2506 S Lamar Blvd Ste 1, Austin TX 78704<br>
+      Jennifer Ferrara TX License #736797 &middot; (512) 994-8080 &middot; jennifer@nookrealtygroup.com<br>
+      Equal Housing Opportunity &middot; each office independently owned &amp; operated &middot; information deemed reliable but not guaranteed.</div>
     </footer>
   </div>
 </div>
@@ -541,6 +597,18 @@ function noteFor(id){
   }
   return found;
 }
+/* Every note on a task, yours and the AI worker's, newest last. */
+function notesFor(id){
+  return DATA.notes.filter(function(n){
+    return String(n.taskid||'').trim()===String(id).trim()&&String(n.note||'').trim();
+  });
+}
+function noteBlock(n){
+  var worker=String(n.by||'').toLowerCase()==='automation';
+  var when=n.date?fmtDT(n.date):'';
+  return '<div class="tasknote'+(worker?' worker':'')+'"><b>'
+    +(worker?'AI worker':'Your note')+(when?' &middot; '+esc(when):'')+'</b>'+rich(n.note)+'</div>';
+}
 
 
 function claudeUrl(t){
@@ -622,7 +690,7 @@ function rich(s){
 function taskHtml(t,mode){
   var onClaude=(mode==='waiting')&&isOnClaude(t);
   var cls='task'+(isDone(t)?' done':'')+(t.priority==='1'?' p1':'')+(mode==='waiting'?(onClaude?' waiting onclaude':' waiting'):'');
-  var chips='<span class="chip '+(t.type==='ai'?'ai':'jen')+'">'+(t.type==='ai'?'AI':'JEN')+'</span>';
+  var chips='';
   var ask='';
   if(!isDone(t)&&t.type==='jen'){
     ask=autoFor(t)
@@ -649,7 +717,7 @@ function taskHtml(t,mode){
   var noteBtn='';
   if(isDone(t)) noteBtn=' <button class="notebtn" data-note="'+escA(t.id)+'">&#9998; '+(existing?'Edit note':'Add a note')+'</button>';
   else if(t.type==='jen') noteBtn=' <button class="notebtn" data-note="'+escA(t.id)+'">'+(existing?'&#9998; Edit note':'&#43; Add a note')+'</button>';
-  var noteShow=existing?'<div class="tasknote"><b>Your note for the AI worker</b>'+rich(existing.note)+'</div>':'';
+  var noteShow=notesFor(t.id).map(noteBlock).join('');
   return '<div class="'+cls+'" data-tid="'+escA(t.id)+'">'+box
     +'<div class="body"><div class="txt" data-open="'+escA(t.id)+'">'+esc(t.title)+'</div>'
     +'<div class="meta">'+chips+expl+ask+noteBtn+'</div>'+wait+res+noteShow
@@ -799,7 +867,8 @@ function leadHtml(l,i){
   return '<div class="lead" data-lead="'+i+'">'
     +'<div class="addr" data-leadopen="'+i+'">'+esc(l.address||'')+'</div>'
     +'<div class="sub">'+(area?esc(area)+' &middot; ':'')+(price?'<b>'+esc(price)+'</b>':'')+(signal?' &middot; '+esc(signal):'')+'</div>'
-    +'<div class="meta"><span class="chip lead-now">Contact now</span>'+call+pkgChip+fubChip+wtBtn+srcChip
+    +'<div class="tier"><span class="chip lead-now">Contact now</span></div>'
+    +'<div class="meta">'+call+pkgChip+fubChip+wtBtn+srcChip
     +'<button class="leaddismiss" data-dismiss="'+i+'">&#10005; Remove</button></div>'
     +(d?'<div class="detail">'+d+'</div>':'')
     +'</div>';
@@ -873,8 +942,8 @@ document.getElementById('leadlist').addEventListener('click',function(e){
     }
     return;
   }
-  var o=e.target.closest('[data-leadopen]');
-  if(o){o.closest('.lead').classList.toggle('open');}
+  var lead=e.target.closest('.lead');
+  if(lead&&!e.target.closest('button,a')){lead.classList.toggle('open');}
 });
 
 /* ---------- explain popup ---------- */

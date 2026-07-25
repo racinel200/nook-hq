@@ -325,7 +325,7 @@ function taskCard(t){
 
 async function toggleDone(id){
   const t = byId(id); if(!t) return;
-  const next = t.status === 'done' ? 'open' : 'done';
+  const next = t.status === 'done' ? 'todo' : 'done';
   const { error } = await sb.from('tasks')
     .update({status: next, updated: new Date().toISOString()}).eq('id', id);
   if(error) return toast('Could not save: ' + error.message);
@@ -456,7 +456,7 @@ async function addTask(){
     category: $('fCat').value,
     priority: parseInt($('fPrio').value, 10),
     type: $('fType').value,
-    status: 'open',
+    status: 'todo',
     updated: new Date().toISOString()
   };
   const { error } = await sb.from('tasks').insert(row);

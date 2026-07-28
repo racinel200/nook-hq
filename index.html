@@ -546,22 +546,22 @@ var SUPA_KEY='sb_publishable_RpO9TVBWHAB6lAwi264W2A_T-ofVxuA';
 var GOOGLE_CLIENT_ID='131895285577-rsqau2l8o6na5890nmdlqp52uui94h0f.apps.googleusercontent.com';
 var SB=window.supabase.createClient(SUPA_URL,SUPA_KEY);
 /* ---------- Day to Day ----------
-   Jen's people-only category (7/28/26). Claude never creates a task here and
-   never holds one, so the AI worker is not offered as an owner for it in the
-   add-task modal or the assign popup. The automation scout may still propose a
-   one-tap automation on a Day to Day task a person added \u2014 proposing is not
-   creating. The rule is enforced here in the page AND in the worker skills. */
+   Jen's manual category (7/28/26). Nothing lands on this list by automation:
+   Claude never CREATES a task in it, in a chat session or on a scheduled run.
+   That rule lives in the worker skills — only a person puts work here.
+   Handing one to Claude afterwards is a different thing and stays allowed
+   (Jen, 7/28/26), so the AI worker is an owner option here like anywhere else.
+   The board opens on this tab and new tasks default to it. */
 var DAYTODAY='daytoday';
-function peopleOnly(cat){return cat===DAYTODAY;}
 var CAT_LONG={
-  daytoday:'The running list of ordinary work \u2014 errands, calls, paperwork, whatever comes up that day. This one is people-only: Claude never adds a task here and never works one, so nothing on this tab arrived by automation. Anyone on the team can add to it by hand. Claude can still propose a one-tap automation for a task once a person has put it here.',
+  daytoday:'The running list of ordinary work \u2014 errands, calls, paperwork, whatever comes up that day. Everything on it is put there by a person: Claude never adds a task to this list on its own. Once it is here you can work it yourself, hand it to a teammate, or hand it to Claude like any other task \u2014 and Claude can propose a one-tap automation for it.',
   listings:'Shift the focus to winning seller listings, luxury-led, across Dripping Springs, Wimberley, Westlake and Lake Travis. With 63.5% of Dripping Springs listings cutting price and $2M+ West Austin sitting on roughly 16.7 months of inventory, sellers go to whoever markets best.',
   presence:'Make the luxury track record findable. The $2.9M to $5.4M career sales are effectively invisible online today. This covers the sold gallery, a Luxury Listings page, the CLHMS directory, a consolidated Zillow profile, and the weekly market video that doubles as a listing presentation.',
   convert:'Speed to lead and clean CRM stages drive Zillow Preferred scoring, and Preferred scoring drives volume. Running alongside it: the review campaign across about 90 past closings, since reviews are the strongest online converter for listing appointments.',
   ops:'The plumbing everything else runs on. The home-valuation funnel, seller pages and gated guides, Meta seller campaigns, and the automations that keep it all moving inside 3 to 6 hours a week.'
 };
 var CAT_DESC={
-  daytoday:'Your everyday list \u2014 added by hand, never by Claude',
+  daytoday:'Your everyday list \u2014 added by hand, by people',
   listings:'Shift from buyers to luxury seller listings',
   presence:'Make the luxury track record findable online',
   convert:'Speed to lead and reviews drive Zillow scoring',
@@ -1423,11 +1423,9 @@ document.getElementById('noteSave').addEventListener('click',function(){
    meant for that person (the AI worker ignores it unless Claude is the one
    holding the task), and can open a prefilled email draft. */
 var assignTaskId=null;
-function drawAssignPicker(sel,cat){
+function drawAssignPicker(sel){
   var el=document.getElementById('assignWho');
-  var roster=peopleOnly(cat)?PEOPLE.slice():PEOPLE.concat([CLAUDE_P]);
-  if(peopleOnly(cat)&&sel===CLAUDE)sel=OWNER;
-  el.innerHTML=roster.map(function(p){
+  el.innerHTML=PEOPLE.concat([CLAUDE_P]).map(function(p){
     return '<option value="'+escA(p.email)+'"'+(p.email===sel?' selected':'')+'>'+esc(p.name)+'</option>';
   }).join('');
   syncNotifyRow();
@@ -1447,7 +1445,7 @@ function openAssign(id){
   assignTaskId=id;
   var cur=ownerOf(t);
   /* anything still sitting with Jen preselects Victoria — the usual hand-off */
-  drawAssignPicker(cur===OWNER?defaultAssignee():cur,t.category);
+  drawAssignPicker(cur===OWNER?defaultAssignee():cur);
   document.getElementById('assignSub').textContent=t.id+' · '+t.title;
   document.getElementById('assignNote').value=String(t.assign_note||'');
   document.getElementById('assignNotify').checked=false;
@@ -1515,19 +1513,13 @@ function pickWire(id,attr,set){
   });
 }
 pickWire('prioPick','data-p',function(v){newPrio=v;});
-pickWire('catPick','data-c',function(v){
-  newCat=v;
-  /* Day to Day is people-only \u2014 pull the AI worker out of the owner row */
-  if(peopleOnly(newCat)&&newWho===CLAUDE)newWho=OWNER;
-  drawWhoPick();
-});
+pickWire('catPick','data-c',function(v){newCat=v;});
 pickWire('whoPick','data-w',function(v){newWho=v;});
 /* one button per teammate plus Claude — new tasks default to Jen, exactly as
    they did when this was a two-way Jen/AI switch */
 function drawWhoPick(){
   var el=document.getElementById('whoPick');
-  var roster=peopleOnly(newCat)?PEOPLE.slice():PEOPLE.concat([CLAUDE_P]);
-  el.innerHTML=roster.map(function(p){
+  el.innerHTML=PEOPLE.concat([CLAUDE_P]).map(function(p){
     var label=(p.email===OWNER)?'Me (Jen)':(p.email===CLAUDE?'The AI worker':p.short);
     return '<button data-w="'+escA(p.email)+'"'+(p.email===newWho?' class="active"':'')+'>'+esc(label)+'</button>';
   }).join('');
@@ -1579,7 +1571,7 @@ function loadData(first){
     PACKAGES=res[5]||{};
     lastLoad=Date.now();
     if(first){
-      /* always open on Day to Day \u2014 it's the running list (Jen, 7/28/26) */
+      /* always open on Day to Day — it's the running list (Jen, 7/28/26) */
       CAT=DAYTODAY;
       document.getElementById('status').style.display='none';
       document.getElementById('content').style.display='block';

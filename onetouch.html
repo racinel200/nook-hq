@@ -16,7 +16,12 @@
      v3 (7/25/26) — emails no longer queue for the hourly sender. Send Email
      opens the phone's default mail app pre-loaded (to/subject/body) and marks
      the row sent, mirroring Send Text. The phone supplies the signature; no
-     FUB note is written. -->
+     FUB note is written.
+     v4 (7/28/26) — drafts are editable in place. Open a row not yet sent and
+     tap Edit to reword the message (and subject, on email rows); Save writes
+     straight to the onetouch table, so the edge function sends exactly what
+     you saved. Editing only ever touches subject and message — never status,
+     recipient, or channel. -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@500;600&family=Poppins:wght@400;500;600&family=Epilogue:wght@400;500&display=swap">
@@ -84,6 +89,13 @@
   .detail{display:none;margin:10px 0 2px 36px}
   .row.open .detail{display:block}
   .msg{font-size:13px;line-height:1.65;white-space:pre-wrap;background:var(--lime);border:1px solid var(--greige);padding:10px 12px;margin-bottom:8px}
+  .edit{margin-bottom:8px}
+  .edit label{display:block;font-family:'Poppins',sans-serif;font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--stone);margin-bottom:3px}
+  .edit input,.edit textarea{width:100%;font-family:'Epilogue',sans-serif;font-size:13px;line-height:1.65;color:var(--ink);background:#fff;border:1px solid var(--stone);border-radius:2px;padding:9px 11px;margin-bottom:8px;-webkit-appearance:none}
+  .edit textarea{resize:vertical;min-height:150px}
+  .edit input:focus,.edit textarea:focus{outline:none;border-color:var(--crimson)}
+  .edit .cnt{font-size:10.5px;color:var(--stone);margin:-5px 0 8px;text-align:right}
+  .edit .cnt.over{color:var(--crimson)}
   .reason{font-size:11px;color:var(--stone);margin-bottom:4px}
   .toline{font-size:11px;color:var(--stone);margin-bottom:9px}
   .acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -108,7 +120,7 @@
     <img class="logo" src="https://media-production.lp-cdn.com/cdn-cgi/image/format=auto,quality=85,fit=scale-down,width=320/https://media-production.lp-cdn.com/media/zbdbv6qzgekrd4zsps7z" alt="Nook Realty" onerror="this.style.display='none';document.getElementById('logotext').style.display='block'">
     <div class="logotext" id="logotext">Nook Realty</div>
     <h1>One-Touch Correspondence</h1>
-    <p><b>Emails:</b> tap Send Email &mdash; it opens your mail app with everything filled in; hit send there. <b>Texts:</b> tap Send Text &mdash; it copies the message and opens the contact in Follow Up Boss; paste and hit send there so it goes from your FUB number. Nothing leaves this page on its own. <a href="./">&larr; board</a></p>
+    <p><b>Emails:</b> tap Send Email &mdash; it opens your mail app with everything filled in; hit send there. <b>Texts:</b> tap Send Text &mdash; it copies the message and opens the contact in Follow Up Boss; paste and hit send there so it goes from your FUB number. <b>Not quite right?</b> Open a row and tap Edit to reword it before you send. Nothing leaves this page on its own. <a href="./">&larr; board</a></p>
   </header>
   <div id="gate">
     <p>This page is private &mdash; sign in with your Google account to open the queue.<br>(Only accounts on Jen&rsquo;s approved list get in.)</p>
@@ -214,6 +226,16 @@ function api(params){
           });
         });
       }
+      else if(act==='edit'){
+        /* Save a hand-edited draft. Only the wording changes — never the
+           status, recipient, or channel, so an edit can't send anything or
+           redirect it to someone else. */
+        var ep={message:String(params.message==null?'':params.message),updated:now};
+        if(params.subject!=null)ep.subject=String(params.subject);
+        return SB.from('onetouch').update(ep).eq('id',id).then(function(u){
+          return u.error?{ok:false,error:u.error.message}:{ok:true};
+        });
+      }
       else return {ok:false,error:'unsupported action'};
       return SB.from('onetouch').update(patch).eq('id',id).then(function(u){
         return u.error?{ok:false,error:u.error.message}:{ok:true};
@@ -262,6 +284,13 @@ function mailHref(r){
 /* pending and approved both mean "not sent yet". approved = queued for the
    hourly auto-sender (onetouch-sender-worker); pending = you send it yourself. */
 function isTodo(st){st=String(st||'').toLowerCase();return st==='pending'||st==='approved';}
+/* Rows you can still reword: anything not yet sent. */
+function canEdit(st){st=String(st||'').toLowerCase();return isTodo(st)||st==='deferred';}
+/* Which rows are open in the editor right now. Keyed by row id. */
+var EDIT={};
+function editingAny(){for(var k in EDIT)if(EDIT[k])return true;return false;}
+/* A text this long will split into multiple SMS segments. */
+var SMS_SOFT=480;
 function card(r){
   var st=r.status.toLowerCase(),em=(r.channel||'text').toLowerCase()==='email';
   var smsHref='sms:'+escA(String(r.to||'').replace(/[^+\d]/g,''))+'?&body='+encodeURIComponent(r.message||'');
@@ -289,13 +318,33 @@ function card(r){
   }
   var failNote=(st==='deferred'&&(r.notes||'').indexOf('send failed')>-1)?'<div class="note">&#9888; '+esc(r.notes)+'</div>':'';
   var handled=(st==='completed'&&!r.sentat&&(r.notes||'').indexOf('already handled')>-1)?'<div class="note" style="color:var(--sage)">'+esc(r.notes.split('·').pop().trim())+'</div>':'';
-  /* expanded detail */
-  var d='<div class="detail">'
-    +'<div class="msg">'+(em?'Subject: '+esc(r.subject||'')+'\n\n':'')+esc(r.message||'')+'</div>'
+  /* expanded detail — either the read-only draft or the editor */
+  var editing=!!EDIT[r.id]&&canEdit(st);
+  /* While the editor is open the row's own Send button goes away too. */
+  if(editing)right='';
+  var body;
+  if(editing){
+    body='<div class="edit">'
+      +(em?'<label for="es-'+escA(r.id)+'">Subject</label>'
+           +'<input id="es-'+escA(r.id)+'" type="text" data-esub="'+escA(r.id)+'" value="'+escA(r.subject||'')+'">':'')
+      +'<label for="em-'+escA(r.id)+'">Message</label>'
+      +'<textarea id="em-'+escA(r.id)+'" data-emsg="'+escA(r.id)+'" rows="9">'+esc(r.message||'')+'</textarea>'
+      +(em?'':'<div class="cnt" data-ecnt="'+escA(r.id)+'"></div>')
+      +'</div>';
+  } else {
+    body='<div class="msg">'+(em?'Subject: '+esc(r.subject||'')+'\n\n':'')+esc(r.message||'')+'</div>';
+  }
+  var d='<div class="detail">'+body
     +(r.reason?'<div class="reason">'+esc(r.reason)+'</div>':'')
     +(r.to?'<div class="toline">To '+esc(r.name||'')+' · '+esc(r.to)+(st==='completed'&&r.sentat?' · sent '+fmt(r.sentat):'')+'</div>':'')
     +'<div class="acts">';
-  if(isTodo(st)){
+  if(editing){
+    /* Editing hides every send/skip control so a stray tap can't fire off a
+       half-written draft. Save or Cancel first. */
+    d+='<button class="cta" data-esave="'+escA(r.id)+'">Save</button>'
+      +'<button class="sbtn" data-ecancel="'+escA(r.id)+'">Cancel</button>';
+  } else if(isTodo(st)){
+    d+='<button class="sbtn" data-edit="'+escA(r.id)+'">&#9998; Edit</button>';
     if(em)d+=mailAppBtn;
     if(String(r.altmessage||'').trim())d+='<button class="sbtn" data-switch="'+escA(r.id)+'">&#8646; Send as '+(em?'text':'email')+' instead</button>';
     d+='<button class="sbtn" data-skip="'+escA(r.id)+'">&#10005; Skip</button>'
@@ -303,13 +352,14 @@ function card(r){
   } else if(st==='completed'&&r.sentat){
     d+='<button class="undo" data-txundo="'+escA(r.id)+'">undo — bring it back</button>';
   } else if(st==='deferred'){
-    d+='<button class="sbtn" data-restore="'+escA(r.id)+'">Bring back</button>';
+    d+='<button class="sbtn" data-restore="'+escA(r.id)+'">Bring back</button>'
+      +'<button class="sbtn" data-edit="'+escA(r.id)+'">&#9998; Edit</button>';
     if(String(r.altmessage||'').trim())d+='<button class="sbtn" data-switch="'+escA(r.id)+'">&#8646; Send as '+(em?'text':'email')+' instead</button>';
     d+='<button class="sbtn" data-skip="'+escA(r.id)+'">&#10005; Skip</button>';
   }
-  if(r.fubpersonid&&r.fubpersonid!=='0')d+='<a class="sbtn fu" target="_blank" rel="noopener" href="'+FUB+escA(r.fubpersonid)+'">FUB &#8599;</a>';
+  if(!editing&&r.fubpersonid&&r.fubpersonid!=='0')d+='<a class="sbtn fu" target="_blank" rel="noopener" href="'+FUB+escA(r.fubpersonid)+'">FUB &#8599;</a>';
   d+='</div></div>';
-  return '<div class="row'+(r.priority==='1'&&st==='pending'?' hi':'')+'" data-cid="'+escA(r.id)+'">'
+  return '<div class="row'+(r.priority==='1'&&st==='pending'?' hi':'')+(editing?' open':'')+'" data-cid="'+escA(r.id)+'">'
     +'<div class="rowtop">'+left
     +'<div class="mid" data-open="'+escA(r.id)+'">'
     +'<div class="ttl">'+esc(r.name||'')+' <span>&mdash; '+preview+'</span></div>'
@@ -354,7 +404,7 @@ function draw(){
   var html='',sum='';
   if(TABX==='pending'){
     html=pend.length?'<div class="list">'+pend.map(card).join('')+'</div>':'<p class="empty" style="border:1px solid var(--greige)">Nothing waiting on you &mdash; Claude keeps watching Follow Up Boss.</p>';
-    sum='Tap a row to read the full message. Send Email opens your mail app with everything filled in. Send Text copies the message and opens FUB — paste and send.';
+    sum='Tap a row to read the full message, or tap Edit to reword it first. Send Email sends it through Follow Up Boss. Send Text copies the message and opens FUB — paste and send.';
   } else if(TABX==='done'){
     var dn=vis.filter(function(r){return r.status.toLowerCase()==='completed';}).sort(function(a,b){return (b.updated||'').localeCompare(a.updated||'');});
     html=dn.length?'<div class="list">'+dn.map(card).join('')+'</div>':'<p class="empty" style="border:1px solid var(--greige)">Nothing sent yet.</p>';
@@ -469,7 +519,65 @@ document.getElementById('pills').addEventListener('click',function(e){
 document.getElementById('ppl').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b)return;PFIL=b.getAttribute('data-p');draw();
 });
+/* Save a reworded draft. Optimistic like every other action here — the row
+   updates instantly and rolls back if Supabase refuses. */
+function saveEdit(id){
+  var r=byId(id);if(!r)return;
+  var ta=document.querySelector('[data-emsg="'+id+'"]');
+  var si=document.querySelector('[data-esub="'+id+'"]');
+  if(!ta)return;
+  var newMsg=ta.value,newSub=si?si.value:null;
+  if(!String(newMsg).trim()){toast('A message can’t be empty.');return;}
+  if(newMsg===r.message&&(si===null||newSub===r.subject)){
+    EDIT[id]=false;draw();var el0=document.querySelector('.row[data-cid="'+id+'"]');if(el0)el0.classList.add('open');
+    toast('No changes.');return;
+  }
+  var prev={message:r.message,subject:r.subject};
+  r.message=newMsg;if(si)r.subject=newSub;
+  r.updated=new Date().toISOString();
+  EDIT[id]=false;draw();
+  var el=document.querySelector('.row[data-cid="'+id+'"]');if(el)el.classList.add('open');
+  toast('Saved.');
+  api({action:'ui_act',id:id,act:'edit',message:newMsg,subject:si?newSub:null}).then(function(res){
+    if(res&&res.auth===false){r.message=prev.message;r.subject=prev.subject;draw();authFail(res.error||'Sign-in expired — sign in again.');return;}
+    if(!res||!res.ok){r.message=prev.message;r.subject=prev.subject;draw();toast(res&&res.error?res.error:'Couldn’t save the edit — try again.');}
+  }).catch(function(){r.message=prev.message;r.subject=prev.subject;draw();toast('Couldn’t save the edit — try again.');});
+}
+/* Live length hint on text drafts — long ones split into several SMS. */
+function editCount(id){
+  var ta=document.querySelector('[data-emsg="'+id+'"]');
+  var c=document.querySelector('[data-ecnt="'+id+'"]');
+  if(!ta||!c)return;
+  var n=ta.value.length;
+  c.textContent=n+' characters'+(n>SMS_SOFT?' — long for a text, it may send as several':'');
+  c.classList.toggle('over',n>SMS_SOFT);
+}
+document.getElementById('list').addEventListener('input',function(e){
+  var t=e.target.closest('[data-emsg]');
+  if(t)editCount(t.getAttribute('data-emsg'));
+});
 document.getElementById('list').addEventListener('click',function(e){
+  var ed=e.target.closest('[data-edit]');
+  if(ed){
+    e.preventDefault();e.stopPropagation();
+    var eid=ed.getAttribute('data-edit');
+    EDIT={};EDIT[eid]=true;draw();
+    var ta=document.querySelector('[data-emsg="'+eid+'"]');
+    if(ta){ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight+8,520)+'px';editCount(eid);ta.focus();
+      ta.setSelectionRange(ta.value.length,ta.value.length);}
+    return;
+  }
+  var es=e.target.closest('[data-esave]');
+  if(es){e.preventDefault();e.stopPropagation();saveEdit(es.getAttribute('data-esave'));return;}
+  var ec=e.target.closest('[data-ecancel]');
+  if(ec){
+    e.preventDefault();e.stopPropagation();
+    var cid=ec.getAttribute('data-ecancel');EDIT[cid]=false;draw();
+    var cel=document.querySelector('.row[data-cid="'+cid+'"]');if(cel)cel.classList.add('open');
+    return;
+  }
+  /* Taps inside the editor shouldn't collapse the row or trigger anything. */
+  if(e.target.closest('.edit'))return;
   var fs=e.target.closest('[data-fubsend]');
   if(fs){
     e.preventDefault();e.stopPropagation();
@@ -538,7 +646,15 @@ document.getElementById('list').addEventListener('click',function(e){
   if(op){op.closest('.row').classList.toggle('open');}
 });
 document.addEventListener('visibilitychange',function(){
+  /* Never refetch mid-edit — a reload would replace the textarea you're
+     typing in with whatever the queue last had. */
+  if(editingAny())return;
   if(document.visibilityState==='visible'&&IDT&&Date.now()-(loadQueue._t||0)>60000)loadQueue(false);
+});
+/* Same reason: don't lose a half-written edit to a stray back-swipe or reload. */
+window.addEventListener('beforeunload',function(e){
+  if(!editingAny())return;
+  e.preventDefault();e.returnValue='';
 });
 
 function parseCSV(text){

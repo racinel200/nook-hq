@@ -88,6 +88,10 @@
   .toline{font-size:11px;color:var(--stone);margin-bottom:9px}
   .acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .sbtn{font-family:'Poppins',sans-serif;display:inline-block;background:#fff;border:1px solid var(--greige);color:var(--stone);border-radius:2px;padding:7px 12px;font-size:10.5px;letter-spacing:.3px;text-decoration:none;cursor:pointer;touch-action:manipulation}
+  .autochk{display:inline-flex;align-items:center;gap:5px;font-family:'Poppins',sans-serif;font-size:10px;letter-spacing:.3px;color:var(--stone);cursor:pointer;flex-shrink:0;padding:6px 8px;border:1px solid var(--greige);border-radius:2px;background:#fff;white-space:nowrap;touch-action:manipulation;user-select:none}
+  .autochk.on{border-color:var(--crimson);color:var(--crimson);background:#fff}
+  .autochk input{accent-color:var(--crimson);margin:0;width:13px;height:13px;pointer-events:none}
+  .stic.q{background:var(--crimson);color:#fff}
   .sbtn.armed{background:var(--crimson);border-color:var(--crimson);color:#fff}
   .sbtn.fu{color:var(--ink)}
   .undo{font-size:11px;color:var(--stone);border:none;background:none;cursor:pointer;font-family:'Epilogue',sans-serif;text-decoration:underline;padding:6px 2px}
@@ -257,8 +261,8 @@ function mailHref(r){
     +'?subject='+encodeURIComponent(String(r.subject||''))
     +'&body='+encodeURIComponent(String(r.message||''));
 }
-/* pending and approved both mean "not sent yet" — approved is a leftover
-   status from the retired auto-sender. */
+/* pending and approved both mean "not sent yet". approved = queued for the
+   hourly auto-sender (onetouch-sender-worker); pending = you send it yourself. */
 function isTodo(st){st=String(st||'').toLowerCase();return st==='pending'||st==='approved';}
 function card(r){
   var st=r.status.toLowerCase(),em=(r.channel||'text').toLowerCase()==='email';
@@ -267,13 +271,18 @@ function card(r){
   var sendHref=hasFub?FUB+escA(r.fubpersonid):smsHref;
   var sendAttr=hasFub?' target="_blank" rel="noopener"':'';
   var emailBtn='<a class="cta" data-mail="'+escA(r.id)+'" href="'+escA(mailHref(r))+'">Send Email</a>';
+  /* Auto-send checkbox — email rows only. Checked sets status 'approved', which
+     the hourly sender picks up. Untick before the hour turns and nothing goes out. */
+  var autoBox=em?('<label class="autochk'+(st==='approved'?' on':'')
+    +'" title="Queue this email for the hourly auto-sender"><input type="checkbox" data-auto="'
+    +escA(r.id)+'"'+(st==='approved'?' checked':'')+'><span>Auto</span></label>'):'';
   var preview=em?esc(r.subject||''):esc(String(r.message||'').slice(0,70)+(String(r.message||'').length>70?'…':''));
   var metaline=esc(r.trigger||'')+(r.reason?' · '+esc(r.reason):'');
   var dot=ADMIN&&r.assignedto?'<span class="dot'+(String(r.assignedto).toLowerCase().indexOf('jen')===0||String(r.assignedto).toLowerCase().indexOf('jennifer')===0?'':' o')+'" title="'+escA(r.assignedto)+'">'+esc(initials(r.assignedto))+'</span>':'';
   var left,right='',statusNote='';
   if(isTodo(st)){
-    left='<span class="stic tx">'+(em?'&#9993;':'&#128172;')+'</span>';
-    right=em?emailBtn
+    left='<span class="stic '+(st==='approved'?'q':'tx')+'">'+(em?'&#9993;':'&#128172;')+'</span>';
+    right=em?(autoBox+emailBtn)
             :'<a class="cta" data-sms="'+escA(r.id)+'"'+sendAttr+' href="'+sendHref+'">Send Text</a>';
   } else if(st==='completed'){
     left='<span class="stic ok">&#10003;</span>';
@@ -434,6 +443,18 @@ document.getElementById('ppl').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b)return;PFIL=b.getAttribute('data-p');draw();
 });
 document.getElementById('list').addEventListener('click',function(e){
+  var ab=e.target.closest('[data-auto]')||e.target.closest('.autochk');
+  if(ab){
+    e.preventDefault();e.stopPropagation();
+    var abox=ab.matches('[data-auto]')?ab:ab.querySelector('[data-auto]');
+    if(!abox)return;
+    var aid=abox.getAttribute('data-auto'),ar=byId(aid);if(!ar)return;
+    var on=String(ar.status||'').toLowerCase()==='approved';
+    act(aid,on?'unapprove':'approve',
+        on?'Auto-send off — this one waits for you.'
+          :'Queued — it goes out on the next hourly run.');
+    return;
+  }
   var sw=e.target.closest('[data-switch]');
   if(sw){
     var rid=sw.getAttribute('data-switch');var r=byId(rid);if(!r)return;

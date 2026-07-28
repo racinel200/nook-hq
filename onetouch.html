@@ -88,10 +88,8 @@
   .toline{font-size:11px;color:var(--stone);margin-bottom:9px}
   .acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .sbtn{font-family:'Poppins',sans-serif;display:inline-block;background:#fff;border:1px solid var(--greige);color:var(--stone);border-radius:2px;padding:7px 12px;font-size:10.5px;letter-spacing:.3px;text-decoration:none;cursor:pointer;touch-action:manipulation}
-  .autochk{display:inline-flex;align-items:center;gap:5px;font-family:'Poppins',sans-serif;font-size:10px;letter-spacing:.3px;color:var(--stone);cursor:pointer;flex-shrink:0;padding:6px 8px;border:1px solid var(--greige);border-radius:2px;background:#fff;white-space:nowrap;touch-action:manipulation;user-select:none}
-  .autochk.on{border-color:var(--crimson);color:var(--crimson);background:#fff}
-  .autochk input{accent-color:var(--crimson);margin:0;width:13px;height:13px;pointer-events:none}
-  .stic.q{background:var(--crimson);color:#fff}
+  .cta.armed{background:var(--ink);border-color:var(--ink)}
+  .cta[disabled]{opacity:.55;pointer-events:none}
   .sbtn.armed{background:var(--crimson);border-color:var(--crimson);color:#fff}
   .sbtn.fu{color:var(--ink)}
   .undo{font-size:11px;color:var(--stone);border:none;background:none;cursor:pointer;font-family:'Epilogue',sans-serif;text-decoration:underline;padding:6px 2px}
@@ -270,19 +268,18 @@ function card(r){
   var hasFub=!!(r.fubpersonid&&r.fubpersonid!=='0');
   var sendHref=hasFub?FUB+escA(r.fubpersonid):smsHref;
   var sendAttr=hasFub?' target="_blank" rel="noopener"':'';
-  var emailBtn='<a class="cta" data-mail="'+escA(r.id)+'" href="'+escA(mailHref(r))+'">Send Email</a>';
-  /* Auto-send checkbox — email rows only. Checked sets status 'approved', which
-     the hourly sender picks up. Untick before the hour turns and nothing goes out. */
-  var autoBox=em?('<label class="autochk'+(st==='approved'?' on':'')
-    +'" title="Queue this email for the hourly auto-sender"><input type="checkbox" data-auto="'
-    +escA(r.id)+'"'+(st==='approved'?' checked':'')+'><span>Auto</span></label>'):'';
+  /* Primary: sends through Follow Up Boss via the send-onetouch-email edge
+     function. Two taps — the first arms it, the second sends. */
+  var emailBtn='<button class="cta" data-fubsend="'+escA(r.id)+'">Send Email</button>';
+  /* Secondary: the old mailto path, kept for when a draft needs a tweak first. */
+  var mailAppBtn='<a class="sbtn" data-mail="'+escA(r.id)+'" href="'+escA(mailHref(r))+'">Open in mail app</a>';
   var preview=em?esc(r.subject||''):esc(String(r.message||'').slice(0,70)+(String(r.message||'').length>70?'…':''));
   var metaline=esc(r.trigger||'')+(r.reason?' · '+esc(r.reason):'');
   var dot=ADMIN&&r.assignedto?'<span class="dot'+(String(r.assignedto).toLowerCase().indexOf('jen')===0||String(r.assignedto).toLowerCase().indexOf('jennifer')===0?'':' o')+'" title="'+escA(r.assignedto)+'">'+esc(initials(r.assignedto))+'</span>':'';
   var left,right='',statusNote='';
   if(isTodo(st)){
-    left='<span class="stic '+(st==='approved'?'q':'tx')+'">'+(em?'&#9993;':'&#128172;')+'</span>';
-    right=em?(autoBox+emailBtn)
+    left='<span class="stic tx">'+(em?'&#9993;':'&#128172;')+'</span>';
+    right=em?emailBtn
             :'<a class="cta" data-sms="'+escA(r.id)+'"'+sendAttr+' href="'+sendHref+'">Send Text</a>';
   } else if(st==='completed'){
     left='<span class="stic ok">&#10003;</span>';
@@ -299,6 +296,7 @@ function card(r){
     +(r.to?'<div class="toline">To '+esc(r.name||'')+' · '+esc(r.to)+(st==='completed'&&r.sentat?' · sent '+fmt(r.sentat):'')+'</div>':'')
     +'<div class="acts">';
   if(isTodo(st)){
+    if(em)d+=mailAppBtn;
     if(String(r.altmessage||'').trim())d+='<button class="sbtn" data-switch="'+escA(r.id)+'">&#8646; Send as '+(em?'text':'email')+' instead</button>';
     d+='<button class="sbtn" data-skip="'+escA(r.id)+'">&#10005; Skip</button>'
       +'<button class="sbtn" data-defer="'+escA(r.id)+'">Later</button>';
@@ -417,6 +415,35 @@ function act(id,a,okMsg){
     if(!res||!res.ok){r.status=prev;r.sentat=prevSent;draw();toast(res&&res.error?res.error:'Couldn’t save — try again.');}
   }).catch(function(){r.status=prev;r.sentat=prevSent;draw();toast('Couldn’t save — try again.');});
 }
+/* Sends an email row through Follow Up Boss. The FUB key never comes near the
+   browser — the edge function holds it and verifies this user's session. */
+function sendViaFub(id,btn){
+  var r=byId(id);
+  function fail(msg){
+    if(btn){btn.removeAttribute('disabled');btn.textContent='Send Email';}
+    toast(msg);
+  }
+  SB.auth.getSession().then(function(sres){
+    var sess=sres.data&&sres.data.session;
+    if(!sess){authFail('Sign-in expired — sign in again.');return;}
+    return fetch(SUPA_URL+'/functions/v1/send-onetouch-email',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPA_KEY,
+               'Authorization':'Bearer '+sess.access_token},
+      body:JSON.stringify({id:id})
+    }).then(function(res){
+      return res.json().catch(function(){return {ok:false,error:'Follow Up Boss didn’t answer — try again.'};});
+    }).then(function(out){
+      if(out&&out.ok){
+        if(r){r.status='completed';r.sentat=out.sent_at||new Date().toISOString();r.updated=r.sentat;}
+        draw();
+        toast(out.already?'That one was already sent.':'Sent — it’s on the contact’s timeline.');
+      }else{
+        fail(out&&out.error?out.error:'Couldn’t send — try again.');
+      }
+    });
+  }).catch(function(){fail('Couldn’t reach Follow Up Boss — try again.');});
+}
 function loadQueue(first){
   if(first){document.getElementById('gate').style.display='none';document.getElementById('load').style.display='block';}
   return api({action:'ui_list'}).then(function(res){
@@ -443,16 +470,20 @@ document.getElementById('ppl').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b)return;PFIL=b.getAttribute('data-p');draw();
 });
 document.getElementById('list').addEventListener('click',function(e){
-  var ab=e.target.closest('[data-auto]')||e.target.closest('.autochk');
-  if(ab){
+  var fs=e.target.closest('[data-fubsend]');
+  if(fs){
     e.preventDefault();e.stopPropagation();
-    var abox=ab.matches('[data-auto]')?ab:ab.querySelector('[data-auto]');
-    if(!abox)return;
-    var aid=abox.getAttribute('data-auto'),ar=byId(aid);if(!ar)return;
-    var on=String(ar.status||'').toLowerCase()==='approved';
-    act(aid,on?'unapprove':'approve',
-        on?'Auto-send off — this one waits for you.'
-          :'Queued — it goes out on the next hourly run.');
+    if(!fs.classList.contains('armed')){
+      Array.prototype.forEach.call(document.querySelectorAll('[data-fubsend].armed'),function(b){
+        b.classList.remove('armed');b.textContent='Send Email';});
+      fs.classList.add('armed');fs.textContent='Tap again to send';
+      clearTimeout(fs._dis);fs._dis=setTimeout(function(){
+        fs.classList.remove('armed');fs.textContent='Send Email';},4500);
+      return;
+    }
+    clearTimeout(fs._dis);
+    fs.classList.remove('armed');fs.textContent='Sending…';fs.setAttribute('disabled','');
+    sendViaFub(fs.getAttribute('data-fubsend'),fs);
     return;
   }
   var sw=e.target.closest('[data-switch]');

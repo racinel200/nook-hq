@@ -545,24 +545,34 @@ var SUPA_URL='https://wopiuwndpuxzywtchbtt.supabase.co';
 var SUPA_KEY='sb_publishable_RpO9TVBWHAB6lAwi264W2A_T-ofVxuA';
 var GOOGLE_CLIENT_ID='131895285577-rsqau2l8o6na5890nmdlqp52uui94h0f.apps.googleusercontent.com';
 var SB=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+/* ---------- Day to Day ----------
+   Jen's people-only category (7/28/26). Claude never creates a task here and
+   never holds one, so the AI worker is not offered as an owner for it in the
+   add-task modal or the assign popup. The automation scout may still propose a
+   one-tap automation on a Day to Day task a person added \u2014 proposing is not
+   creating. The rule is enforced here in the page AND in the worker skills. */
+var DAYTODAY='daytoday';
+function peopleOnly(cat){return cat===DAYTODAY;}
 var CAT_LONG={
+  daytoday:'The running list of ordinary work \u2014 errands, calls, paperwork, whatever comes up that day. This one is people-only: Claude never adds a task here and never works one, so nothing on this tab arrived by automation. Anyone on the team can add to it by hand. Claude can still propose a one-tap automation for a task once a person has put it here.',
   listings:'Shift the focus to winning seller listings, luxury-led, across Dripping Springs, Wimberley, Westlake and Lake Travis. With 63.5% of Dripping Springs listings cutting price and $2M+ West Austin sitting on roughly 16.7 months of inventory, sellers go to whoever markets best.',
   presence:'Make the luxury track record findable. The $2.9M to $5.4M career sales are effectively invisible online today. This covers the sold gallery, a Luxury Listings page, the CLHMS directory, a consolidated Zillow profile, and the weekly market video that doubles as a listing presentation.',
   convert:'Speed to lead and clean CRM stages drive Zillow Preferred scoring, and Preferred scoring drives volume. Running alongside it: the review campaign across about 90 past closings, since reviews are the strongest online converter for listing appointments.',
   ops:'The plumbing everything else runs on. The home-valuation funnel, seller pages and gated guides, Meta seller campaigns, and the automations that keep it all moving inside 3 to 6 hours a week.'
 };
 var CAT_DESC={
+  daytoday:'Your everyday list \u2014 added by hand, never by Claude',
   listings:'Shift from buyers to luxury seller listings',
   presence:'Make the luxury track record findable online',
   convert:'Speed to lead and reviews drive Zillow scoring',
   ops:'The funnel, pages and automations behind the plan'
 };
-var CATS={listings:'Goal 1 · Win Listings',presence:'Goal 2 · Online Presence',convert:'Goal 3 · Convert & Score',ops:'Goal 4 · Tools & Systems'};
-var SHORT={listings:'Listings',presence:'Presence',convert:'Convert',ops:'Systems'};
+var CATS={daytoday:'Day to Day',listings:'Goal 1 · Win Listings',presence:'Goal 2 · Online Presence',convert:'Goal 3 · Convert & Score',ops:'Goal 4 · Tools & Systems'};
+var SHORT={daytoday:'Day to Day',listings:'Listings',presence:'Presence',convert:'Convert',ops:'Systems'};
 var PRIO_LABEL={1:'Do first',2:'This week',3:'When you can'};
 var CONFIG={apiUrl:'',projectId:'',contextTemplate:''};
 var DATA={tasks:[],activity:[],notes:[],leads:[]};
-var TAB='todo', CAT='listings', ME_EMAIL='';
+var TAB='todo', CAT=DAYTODAY, ME_EMAIL='';
 
 /* ---------- people & ownership ----------
    The roster is the signatures table (admin-editable in Settings), so adding a
@@ -1413,9 +1423,11 @@ document.getElementById('noteSave').addEventListener('click',function(){
    meant for that person (the AI worker ignores it unless Claude is the one
    holding the task), and can open a prefilled email draft. */
 var assignTaskId=null;
-function drawAssignPicker(sel){
+function drawAssignPicker(sel,cat){
   var el=document.getElementById('assignWho');
-  el.innerHTML=PEOPLE.concat([CLAUDE_P]).map(function(p){
+  var roster=peopleOnly(cat)?PEOPLE.slice():PEOPLE.concat([CLAUDE_P]);
+  if(peopleOnly(cat)&&sel===CLAUDE)sel=OWNER;
+  el.innerHTML=roster.map(function(p){
     return '<option value="'+escA(p.email)+'"'+(p.email===sel?' selected':'')+'>'+esc(p.name)+'</option>';
   }).join('');
   syncNotifyRow();
@@ -1435,7 +1447,7 @@ function openAssign(id){
   assignTaskId=id;
   var cur=ownerOf(t);
   /* anything still sitting with Jen preselects Victoria — the usual hand-off */
-  drawAssignPicker(cur===OWNER?defaultAssignee():cur);
+  drawAssignPicker(cur===OWNER?defaultAssignee():cur,t.category);
   document.getElementById('assignSub').textContent=t.id+' · '+t.title;
   document.getElementById('assignNote').value=String(t.assign_note||'');
   document.getElementById('assignNotify').checked=false;
@@ -1489,7 +1501,7 @@ document.getElementById('viewtoggle').addEventListener('click',function(e){
 });
 
 /* add-task modal */
-var newPrio='2',newCat='listings',newWho=OWNER;
+var newPrio='2',newCat=DAYTODAY,newWho=OWNER;
 (function(){
   var cp=document.getElementById('catPick');
   cp.innerHTML=Object.keys(CATS).map(function(k){
@@ -1503,20 +1515,26 @@ function pickWire(id,attr,set){
   });
 }
 pickWire('prioPick','data-p',function(v){newPrio=v;});
-pickWire('catPick','data-c',function(v){newCat=v;});
+pickWire('catPick','data-c',function(v){
+  newCat=v;
+  /* Day to Day is people-only \u2014 pull the AI worker out of the owner row */
+  if(peopleOnly(newCat)&&newWho===CLAUDE)newWho=OWNER;
+  drawWhoPick();
+});
 pickWire('whoPick','data-w',function(v){newWho=v;});
 /* one button per teammate plus Claude — new tasks default to Jen, exactly as
    they did when this was a two-way Jen/AI switch */
 function drawWhoPick(){
   var el=document.getElementById('whoPick');
-  el.innerHTML=PEOPLE.concat([CLAUDE_P]).map(function(p){
+  var roster=peopleOnly(newCat)?PEOPLE.slice():PEOPLE.concat([CLAUDE_P]);
+  el.innerHTML=roster.map(function(p){
     var label=(p.email===OWNER)?'Me (Jen)':(p.email===CLAUDE?'The AI worker':p.short);
     return '<button data-w="'+escA(p.email)+'"'+(p.email===newWho?' class="active"':'')+'>'+esc(label)+'</button>';
   }).join('');
 }
 document.getElementById('fab').addEventListener('click',function(){
-  /* default the category picker to the goal tab Jen is looking at */
-  newCat=CAT;
+  /* new tasks always start in Day to Day, whatever tab is open (Jen, 7/28/26) */
+  newCat=DAYTODAY;
   document.querySelectorAll('#catPick button').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-c')===newCat);});
   newWho=OWNER;drawWhoPick();
   document.getElementById('overlay').classList.add('show');document.getElementById('newtask').focus();
@@ -1561,13 +1579,8 @@ function loadData(first){
     PACKAGES=res[5]||{};
     lastLoad=Date.now();
     if(first){
-      /* open on the goal with the most tasks ready for Jen */
-      var best=CAT,bestN=-1;
-      Object.keys(CATS).forEach(function(k){
-        var n=DATA.tasks.filter(function(t){return t.category===k&&t.type==='jen'&&isReady(t)&&visible(t);}).length;
-        if(n>bestN){bestN=n;best=k;}
-      });
-      CAT=best;
+      /* always open on Day to Day \u2014 it's the running list (Jen, 7/28/26) */
+      CAT=DAYTODAY;
       document.getElementById('status').style.display='none';
       document.getElementById('content').style.display='block';
     }
